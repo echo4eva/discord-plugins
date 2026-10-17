@@ -1,7 +1,7 @@
 /**
  * @name ThreadNavigator
  * @author echo4eva
- * @description A central thread browser that opens selected threads in Discord’s side chat.
+ * @description A searchable thread list for any channel, with threads opening on the side.
  * @version 0.4.4
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ThreadNavigator/index.jsx
  */

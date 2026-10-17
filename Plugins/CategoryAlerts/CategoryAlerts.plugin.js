@@ -1,7 +1,7 @@
 /**
  * @name CategoryAlerts
  * @author echo4eva
- * @description Notifies you, with its own sounds, when a new channel or message appears in a category you watch, such as a ticket section.
+ * @description Alerts for new channels and messages in categories you choose.
  * @version 0.2.0
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/CategoryAlerts/index.jsx
  */

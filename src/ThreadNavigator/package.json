@@ -1,5 +1,5 @@
 {
-	"description": "A central thread browser that opens selected threads in Discord’s side chat.",
+	"description": "A searchable thread list for any channel, with threads opening on the side.",
 	"version": "0.4.4",
 	"name": "thread-navigator",
 	"repository": {

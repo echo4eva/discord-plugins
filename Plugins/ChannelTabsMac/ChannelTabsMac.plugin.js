@@ -1,7 +1,7 @@
 /**
  * @name ChannelTabsMac
  * @author echo4eva, l0c4lh057, CarJem Generations, samfundev
- * @description ChannelTabs with navigation beside the macOS window controls.
+ * @description Browser-style tabs, folders, and bookmarks for Discord.
  * @version 2.8.9-mac.25
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabsMac/index.jsx
  */
