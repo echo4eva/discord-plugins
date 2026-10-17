@@ -1,10 +1,14 @@
 # ChannelTabsMac
 
-ChannelTabsMac is a macOS layout variant of [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) 2.8.9. The three navigation buttons sit together immediately to the right of the native red, yellow, and green window controls. The first tab follows the buttons. The layout change applies only on macOS.
+![ChannelTabsMac tab row with tab folders and the bookmark row](../../docs/images/channeltabsmac-overview.png)
+
+Browser-style tabs for Discord. Group tabs into folders, close a folder to save it for later, and drag tabs and bookmarks wherever you want. Each tab remembers where you were scrolled, and on macOS the tab bar sits neatly beside the window buttons.
+
+ChannelTabsMac is built on [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) 2.8.9 and works on Windows and macOS. On macOS, the back, forward, and close-tab buttons sit right beside the red, yellow, and green window buttons, with the first tab after them.
 
 On macOS, **Command-click** a server icon, channel, thread, direct message, or ChannelTabsMac bookmark to open it in a ChannelTabs tab. This also works for bookmarks inside folders. A server icon opens the server, with Discord choosing which channel to show. Your current view stays open unless you have enabled **Always focus new tabs**. In **ChannelTabsMac → Settings → Behavior**, choose a different click shortcut (Command-Shift, Option, Option-Shift, or Shift) or turn it off. The existing **ChannelTabs → Open in new tab** right-click menu remains available.
 
-**Command-1** through **Command-9** switch to the corresponding tabs from left to right. When that numbered tab does not exist, the shortcut does nothing. Toggle **Command + number switches tabs** in Behavior settings to restore Discord's server shortcuts.
+On macOS, **Command-1** through **Command-9** switch to the corresponding tabs from left to right. When that numbered tab does not exist, the shortcut does nothing. Toggle **Command + number switches tabs** in Behavior settings to restore Discord's server shortcuts.
 
 ## Tab folders
 
@@ -16,11 +20,13 @@ Dragging works like bookmarks: nothing moves until you let go. A blue line shows
 
 ### Closing and reopening folders
 
+![Closing a folder from its right-click menu and reopening it from the saved-folders button](../../docs/images/channeltabsmac-folders.png)
+
 Right-click a folder and choose **Close folder** to take it and its tabs off the tab row without losing them. Once a folder is closed, a saved-folders button with a count appears beside the new-folder button. Click it to see your saved folders and click one to reopen it. It comes back at the end of the tab row with the same tabs, and you switch to its first tab. **Forget saved folder** in the same menu removes a saved folder for good. If the folder you close holds the current tab, you move to the tab next to where the folder was. If it held every open tab, a Friends tab opens so the row is never empty.
 
 Collapsed folders show their tab count and highlight when they contain the current tab. The all-tabs menu still lists every tab, including hidden ones, and switching to a tab in a collapsed folder expands it. Command-number shortcuts count visible tabs from left to right, skipping tabs hidden inside collapsed folders.
 
-Command-click also works on threads listed under a channel in the sidebar, including rows that aren't plain links.
+On macOS, Command-click also works on threads listed under a channel in the sidebar, including rows that aren't plain links.
 
 ## Copy a tab's link
 

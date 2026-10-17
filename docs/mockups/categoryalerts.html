@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="discord.css" />
+		<style>
+			body { width: 1312px; position: relative; padding-top: 112px; }
+			.window { height: 560px; display: flex; flex-direction: column; }
+			.topbar { height: 30px; background: var(--titlebar); display: flex; align-items: center; padding-left: 14px; flex-shrink: 0; }
+			.app { flex: 1; min-height: 0; }
+			.chan .new { margin-left: auto; font-size: 11px; font-weight: 700; color: #fff; background: var(--mention); border-radius: 8px; padding: 0 6px; line-height: 16px; }
+			.menu .item .checkbox { margin-left: 12px; }
+			.menu .item.hover .checkbox.on { background: #fff; }
+			.notice {
+				position: absolute; top: 24px; right: 36px; width: 360px;
+				display: flex; gap: 12px; align-items: flex-start;
+				padding: 12px 14px; border-radius: 16px;
+				background: rgba(246, 246, 248, 0.92); color: #1d1d1f;
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+				font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+				font-size: 13px; line-height: 1.3;
+			}
+			.notice .app-icon { width: 36px; height: 36px; border-radius: 9px; background: #5865f2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+			.notice b { display: block; font-size: 13px; }
+			.notice .meta { margin-left: auto; color: #6e6e73; font-size: 12px; white-space: nowrap; }
+			.toast {
+				position: absolute; left: 60%; bottom: 84px; transform: translateX(-50%);
+				display: flex; align-items: center; gap: 10px;
+				padding: 10px 14px; border-radius: 8px;
+				background: #111214; color: var(--text-default); font-size: 14px;
+				box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+				white-space: nowrap;
+			}
+			.toast .dot { width: 18px; height: 18px; border-radius: 50%; background: #3ba7c9; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+			.main { position: relative; }
+		</style>
+	</head>
+	<body>
+		<div class="notice">
+			<div class="app-icon"><svg width="22" height="22" viewBox="0 0 24 24"><path fill="#fff" d="M19.3 5.3A17 17 0 0 0 15 4l-.5 1.1a15.6 15.6 0 0 0-5 0L9 4a17 17 0 0 0-4.3 1.3C2 9.4 1.3 13.3 1.6 17.2a17 17 0 0 0 5.2 2.6l1.1-1.8a11 11 0 0 1-1.7-.8l.4-.3a12.2 12.2 0 0 0 10.8 0l.4.3-1.7.8 1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.5-.7-8.4-3.1-11.9ZM8.7 14.8c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg></div>
+			<div><b>New channel in Tickets</b>#ticket-0142 · Dashboard Devs</div>
+			<span class="meta">now</span>
+		</div>
+		<div class="window">
+			<div class="topbar"><div class="traffic"><span></span><span></span><span></span></div></div>
+			<div class="app">
+				<div class="rail">
+					<div class="server c6">✉</div>
+					<div class="sep"></div>
+					<div class="server current c5">D</div>
+					<div class="server c1">P</div>
+					<div class="server c3">A</div>
+				</div>
+				<div class="channels">
+					<div class="guildname">Dashboard Devs</div>
+					<div class="chanlist">
+						<div class="category">▾ Community</div>
+						<div class="chan"><span class="hash">#</span>general</div>
+						<div class="chan"><span class="hash">#</span>support</div>
+						<div class="category hover">▾ Tickets</div>
+						<div class="chan unread"><span class="hash">#</span>ticket-0142<span class="new">NEW</span></div>
+						<div class="chan unread"><span class="hash">#</span>ticket-0139</div>
+						<div class="chan"><span class="hash">#</span>ticket-0137</div>
+						<div class="chan"><span class="hash">#</span>ticket-0131</div>
+					</div>
+				</div>
+				<div class="main">
+					<div class="chanheader"><span class="hash">#</span>general</div>
+					<div class="message"><span class="avatar lg c1">K</span><div><div class="who">Kai<span class="when">Today at 11:40</span></div><div class="text">Release notes for 2.5 are pinned. Thanks everyone who tested the beta!</div></div></div>
+					<div class="message"><span class="avatar lg c2">S</span><div><div class="who">Sol<span class="when">Today at 11:44</span></div><div class="text">🎉</div></div></div>
+					<div class="composer">Message #general</div>
+					<div class="toast"><span class="dot">R</span>Rowan in #ticket-0139: Thanks, clearing the cache fixed it!</div>
+				</div>
+			</div>
+			<div class="menu" style="left: 300px; top: 206px; width: 250px">
+				<div class="item">Mark As Read</div>
+				<div class="sep"></div>
+				<div class="item">Collapse Category</div>
+				<div class="item">Mute Category<span>›</span></div>
+				<div class="item">Notification Settings<span>›</span></div>
+				<div class="sep"></div>
+				<div class="item hover">Alert on new channels<span class="checkbox on"><svg width="14" height="14" viewBox="0 0 16 16"><path d="m4 8 3 3 5-6" fill="none" stroke="#5865f2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+				<div class="item">Alert on new messages<span class="checkbox on"><svg width="14" height="14" viewBox="0 0 16 16"><path d="m4 8 3 3 5-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+			</div>
+		</div>
+	</body>
+</html>

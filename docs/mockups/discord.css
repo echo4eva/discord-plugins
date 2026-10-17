@@ -1,0 +1,604 @@
+/* Shared styles for the README mockups. Colours follow Discord's dark theme;
+   plugin rules copy the values the plugins themselves use. */
+
+:root {
+	--rail: #1e1f22;
+	--sidebar: #2b2d31;
+	--chat: #313338;
+	--titlebar: #1e1f22;
+	--text-default: #dbdee1;
+	--text-muted: #949ba4;
+	--header: #f2f3f5;
+	--interactive-text-default: #b5bac1;
+	--interactive-text-hover: #dbdee1;
+	--interactive-text-active: #ffffff;
+	--interactive-background-hover: rgba(78, 80, 88, 0.3);
+	--interactive-background-selected: rgba(78, 80, 88, 0.6);
+	--border-normal: rgba(255, 255, 255, 0.09);
+	--border-subtle: rgba(255, 255, 255, 0.05);
+	--brand-500: #5865f2;
+	--mention: hsl(359, 82.6%, 59.4%);
+	--unread: hsl(235, 86%, 65%);
+	--menu: #111214;
+	--tabHeight: 32px;
+	--favHeight: 28px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body {
+	margin: 0;
+}
+
+body {
+	font-family:
+		"gg sans",
+		-apple-system,
+		BlinkMacSystemFont,
+		"Helvetica Neue",
+		sans-serif;
+	font-size: 14px;
+	color: var(--text-default);
+	background: linear-gradient(135deg, #5a63d8 0%, #7b4fc9 55%, #c0569b 100%);
+	padding: 36px;
+	min-height: 100vh;
+	-webkit-font-smoothing: antialiased;
+}
+
+.window {
+	border-radius: 11px;
+	overflow: hidden;
+	background: var(--chat);
+	box-shadow:
+		0 0 0 1px rgba(0, 0, 0, 0.5),
+		0 24px 60px rgba(0, 0, 0, 0.45);
+	position: relative;
+}
+
+/* Avatars and channel icons are plain coloured circles with initials. */
+.avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	color: #fff;
+	font-size: 10px;
+	font-weight: 700;
+}
+
+.avatar.lg {
+	width: 40px;
+	height: 40px;
+	font-size: 16px;
+}
+
+.c1 { background: #5865f2; }
+.c2 { background: #23a55a; }
+.c3 { background: #f0b232; }
+.c4 { background: #eb459e; }
+.c5 { background: #3ba7c9; }
+.c6 { background: #9b59b6; }
+
+/* ---- Title bar and ChannelTabsMac tab row ---- */
+
+.titlebar {
+	background: var(--titlebar);
+	padding: 8px 10px 4px 0;
+}
+
+.tabrow {
+	display: flex;
+	align-items: center;
+	padding-left: 14px;
+}
+
+.traffic {
+	display: flex;
+	gap: 8px;
+	width: 74px;
+	flex-shrink: 0;
+}
+
+.traffic span {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+}
+
+.traffic span:nth-child(1) { background: #ff5f57; }
+.traffic span:nth-child(2) { background: #febc2e; }
+.traffic span:nth-child(3) { background: #28c840; }
+
+.nav {
+	display: flex;
+	margin-right: 6px;
+}
+
+.nav div {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: var(--tabHeight);
+	margin-right: 3px;
+	border-radius: 4px;
+	color: var(--interactive-text-default);
+}
+
+.nav div.dim {
+	color: #6d6f78;
+}
+
+.tabs {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.tab {
+	display: flex;
+	align-items: center;
+	height: var(--tabHeight);
+	border-radius: 4px;
+	width: 178px;
+	flex: 0 1 178px;
+	min-width: 120px;
+	margin-bottom: 3px;
+	color: var(--interactive-text-default);
+	font-size: 13px;
+}
+
+.tab .avatar {
+	margin: 0 6px;
+}
+
+.tab .name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.tab.selected {
+	background: var(--interactive-background-selected);
+	color: var(--interactive-text-active);
+}
+
+.tab.unread {
+	color: var(--interactive-text-hover);
+}
+
+.tab .close {
+	width: 16px;
+	height: 16px;
+	margin-right: 6px;
+	color: var(--interactive-text-default);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0.8;
+}
+
+.badge {
+	border-radius: 8px;
+	padding: 0 4px;
+	min-width: 16px;
+	height: 16px;
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 600;
+	text-align: center;
+	color: #fff;
+	margin-right: 6px;
+	flex-shrink: 0;
+}
+
+.badge.mention { background: var(--mention); }
+.badge.unread { background: var(--unread); }
+
+.folder {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 0 0 auto;
+	height: var(--tabHeight);
+	padding: 0 9px;
+	margin: 0 3px 3px 3px;
+	border-radius: 4px;
+	color: var(--interactive-text-default);
+	font-size: 13px;
+}
+
+.folder .count {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+/* Open folder: faint line under the label and its tabs. */
+.folder.open,
+.folder.active {
+	margin-right: 0;
+	border-radius: 4px 4px 0 0;
+	border-bottom: 1px solid var(--line);
+}
+
+.folder.open,
+.tab.in {
+	--line: var(--border-normal);
+}
+
+.folder.active,
+.tab.in.active-folder {
+	--line: var(--text-muted);
+}
+
+.folder.active {
+	border-left: 1px solid var(--line);
+	border-radius: 0 0 0 4px;
+	color: var(--interactive-text-active);
+}
+
+.tab.in {
+	border-bottom: 1px solid var(--line);
+	border-radius: 4px 4px 0 0;
+}
+
+.tab.in.end {
+	margin-right: 3px;
+}
+
+.tab.in.active-folder.end {
+	border-right: 1px solid var(--line);
+	border-radius: 4px 0 4px 0;
+}
+
+.rowbtn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 3px;
+	height: 24px;
+	min-width: 24px;
+	margin: 0 6px 3px 6px;
+	border-radius: 4px;
+	color: var(--interactive-text-default);
+	flex-shrink: 0;
+}
+
+.rowbtn.wide {
+	padding: 0 4px;
+	margin-left: 0;
+}
+
+.rowbtn .count {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.rowbtn.hover,
+.folder.hover {
+	background: var(--interactive-background-hover);
+	color: var(--interactive-text-hover);
+}
+
+/* Drop markers, as drawn by the plugin while dragging. */
+.drop-before { box-shadow: inset 2px 0 0 var(--brand-500); }
+.drop-after { box-shadow: inset -2px 0 0 var(--brand-500); }
+
+/* ---- Bookmark row ---- */
+
+.favrow {
+	display: flex;
+	align-items: center;
+	padding: 4px 0 0 102px;
+}
+
+.fav,
+.favgroup {
+	display: flex;
+	align-items: center;
+	height: var(--favHeight);
+	padding: 0 6px;
+	margin-bottom: 3px;
+	border-radius: 4px;
+	color: var(--interactive-text-default);
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.fav .avatar {
+	margin-right: 6px;
+}
+
+.favgroup svg {
+	margin-right: 6px;
+	opacity: 0.8;
+}
+
+.favgroup .caret {
+	margin-left: 4px;
+	opacity: 0.7;
+}
+
+/* ---- Discord body ---- */
+
+.app {
+	display: flex;
+	height: 100%;
+}
+
+.rail {
+	width: 72px;
+	flex-shrink: 0;
+	background: var(--rail);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding-top: 12px;
+}
+
+.rail .server {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #fff;
+	font-weight: 700;
+	font-size: 15px;
+}
+
+.rail .server.current {
+	border-radius: 16px;
+}
+
+.rail .sep {
+	width: 32px;
+	height: 2px;
+	background: #35363c;
+	border-radius: 1px;
+}
+
+.channels {
+	width: 240px;
+	flex-shrink: 0;
+	background: var(--sidebar);
+	display: flex;
+	flex-direction: column;
+}
+
+.guildname {
+	height: 48px;
+	display: flex;
+	align-items: center;
+	padding: 0 16px;
+	font-weight: 600;
+	font-size: 15px;
+	color: var(--header);
+	border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+	flex-shrink: 0;
+}
+
+.chanlist {
+	padding: 8px 8px 0;
+}
+
+.category {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 16px 8px 4px 2px;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+
+.category.hover {
+	color: var(--interactive-text-hover);
+}
+
+.chan {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	padding: 0 8px;
+	margin-bottom: 2px;
+	border-radius: 4px;
+	color: var(--text-muted);
+	font-size: 15px;
+	font-weight: 500;
+}
+
+.chan .hash {
+	font-size: 20px;
+	font-weight: 400;
+	width: 20px;
+	text-align: center;
+	color: #80848e;
+}
+
+.chan.selected {
+	background: var(--interactive-background-selected);
+	color: var(--interactive-text-active);
+}
+
+.chan.unread {
+	color: var(--interactive-text-active);
+	font-weight: 600;
+}
+
+.chan.thread {
+	padding-left: 36px;
+	font-size: 14px;
+	height: 28px;
+}
+
+.main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	background: var(--chat);
+}
+
+.chanheader {
+	height: 48px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0 16px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+	font-weight: 600;
+	color: var(--header);
+	flex-shrink: 0;
+}
+
+.chanheader .hash {
+	color: #80848e;
+	font-size: 22px;
+	font-weight: 400;
+}
+
+.chanheader .tools {
+	margin-left: auto;
+	display: flex;
+	gap: 14px;
+	color: var(--interactive-text-default);
+}
+
+.chanheader .tools .on {
+	color: var(--interactive-text-active);
+}
+
+.message {
+	display: flex;
+	gap: 14px;
+	padding: 6px 16px;
+}
+
+.message .who {
+	font-weight: 600;
+	color: var(--header);
+	font-size: 15px;
+}
+
+.message .when {
+	color: var(--text-muted);
+	font-size: 12px;
+	margin-left: 6px;
+	font-weight: 400;
+}
+
+.message .text {
+	color: var(--text-default);
+	font-size: 15px;
+	line-height: 1.35;
+	margin-top: 2px;
+}
+
+.composer {
+	margin: auto 16px 20px;
+	height: 44px;
+	border-radius: 8px;
+	background: #383a40;
+	display: flex;
+	align-items: center;
+	padding: 0 16px;
+	color: #6d6f78;
+	font-size: 15px;
+}
+
+/* ---- Context menus and toasts ---- */
+
+.menu {
+	position: absolute;
+	width: 220px;
+	padding: 6px 8px;
+	border-radius: 4px;
+	background: var(--menu);
+	box-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.04),
+		0 8px 16px rgba(0, 0, 0, 0.35);
+	font-size: 14px;
+	z-index: 10;
+}
+
+.menu .item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 32px;
+	padding: 6px 8px;
+	border-radius: 2px;
+	color: var(--interactive-text-default);
+	font-weight: 500;
+}
+
+.menu .item.hover {
+	background: var(--brand-500);
+	color: #fff;
+}
+
+.menu .item.danger {
+	color: #f23f42;
+}
+
+.menu .item small {
+	display: block;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-muted);
+	margin-top: 2px;
+}
+
+.menu .item.hover small {
+	color: rgba(255, 255, 255, 0.8);
+}
+
+.menu .sep {
+	height: 1px;
+	margin: 4px 4px;
+	background: rgba(255, 255, 255, 0.06);
+}
+
+.checkbox {
+	width: 18px;
+	height: 18px;
+	border-radius: 4px;
+	border: 1px solid #80848e;
+	flex-shrink: 0;
+}
+
+.checkbox.on {
+	border: 0;
+	background: var(--brand-500);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.label {
+	position: absolute;
+	padding: 6px 12px;
+	border-radius: 999px;
+	background: #fff;
+	color: #1e1f22;
+	font-size: 13px;
+	font-weight: 600;
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+	z-index: 20;
+	white-space: nowrap;
+}

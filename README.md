@@ -2,17 +2,23 @@
 
 BetterDiscord plugins by echo4eva.
 
-## ChannelTabsMac
+## [ChannelTabsMac](Plugins/ChannelTabsMac/README.md)
 
-[ChannelTabsMac](Plugins/ChannelTabsMac/README.md) is a macOS port of ChannelTabs. It places back, forward, and close-tab immediately to the right of the native window controls. It adds tab folders that can be closed and reopened later, per-tab scroll memory, drag-to-reorder tabs and bookmarks, and a configurable modifier-click shortcut for opening sidebar channels, threads, and direct messages in new tabs. It has its own plugin name so it can be installed without replacing ChannelTabs. Enable only one of ChannelTabs and ChannelTabsMac at a time.
+Browser-style tabs for Discord. Group tabs into folders, close a folder to save it for later, and drag tabs and bookmarks wherever you want. Each tab remembers where you were scrolled, and on macOS the tab bar sits neatly beside the window buttons.
 
-## ThreadNavigator
+![ChannelTabsMac tab row with tab folders and the bookmark row](docs/images/channeltabsmac-overview.png)
 
-[ThreadNavigator](Plugins/ThreadNavigator/README.md) turns Discord's Threads button into a searchable browser in the channel chat area. Selecting a thread opens its chat on the right while the browser stays visible. It includes archived-thread filters, bulk thread actions, Discord's own thread right-click menu, and optional one-click opening in ChannelTabsMac tabs.
+## [ThreadNavigator](Plugins/ThreadNavigator/README.md)
 
-## CategoryAlerts
+A better way to browse threads. Click the Threads button to see every thread in the channel, then search, filter and open one on the side while the list stays put. Select several threads to join, leave or close them all at once.
 
-[CategoryAlerts](Plugins/CategoryAlerts/README.md) notifies you, with its own sounds, when a new channel or message appears in a category you watch, such as a ticket section, since Discord has no notification setting for categories.
+![ThreadNavigator's thread browser beside an open thread](docs/images/threadnavigator-browser.png)
+
+## [CategoryAlerts](Plugins/CategoryAlerts/README.md)
+
+Get notified when something happens in a category you care about. Right-click a category to get alerts for new channels, new messages, or both. Each kind of alert has its own sound.
+
+![CategoryAlerts category menu, a desktop notification, and an in-app toast](docs/images/categoryalerts.png)
 
 ## Credits
 
@@ -34,3 +40,5 @@ Edit the files in `src`, then run `npm ci` and one of these from the repository 
 - `npm run build` for all of them
 
 Don't edit the files in `Plugins` directly. Each plugin's changelog is generated from commit messages that start with `added:`, `fixed:`, `improved:`, or `progress:`.
+
+The README images are mockups with sample data, built from the plugins' own styles in [`docs/mockups`](docs/mockups). After changing one, run `docs/mockups/render.sh` (it uses Google Chrome) to regenerate the PNGs in `docs/images`.

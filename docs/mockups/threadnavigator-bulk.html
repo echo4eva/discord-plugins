@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="discord.css" />
+		<link rel="stylesheet" href="threadnavigator.css" />
+		<style>
+			body { width: 1112px; }
+			.window { height: 540px; display: flex; flex-direction: column; }
+			.tn-check { appearance: none; border: 1px solid #80848e; border-radius: 4px; background: transparent; }
+			.tn-check.on { border: 0; background: var(--brand-500) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m4 8 3 3 5-6' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat; }
+			.tn-check.some { border: 0; background: var(--brand-500) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8h8' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") center / 14px no-repeat; }
+			.tn-bulk { display: flex; }
+		</style>
+	</head>
+	<body>
+		<div class="window">
+			<div class="tn-browser tn-selecting">
+				<div class="tn-browser-bar"><div class="tn-browser-title">Threads in #support</div><button class="tn-browser-close">×</button></div>
+				<div class="tn-browser-controls">
+					<input class="tn-search" placeholder="Search threads" />
+					<span class="tn-filter">Active ▾</span>
+					<span class="tn-filter">Joined or not ▾</span>
+					<span class="tn-discover tn-select-toggle" aria-pressed="true">Select</span>
+					<span class="tn-discover">Discord discovery</span>
+				</div>
+				<div class="tn-browser-list">
+					<div class="tn-item tn-item-unread tn-item-mentioned tn-item-checked"><input type="checkbox" class="tn-check on" /><span class="tn-item-link"><span class="tn-item-name">Login loop after the 2.4 update</span><span class="tn-item-meta">Active · Joined</span></span><span class="tn-badges"><span class="tn-badge tn-badge-mention">2</span><span class="tn-badge tn-badge-unread">7</span></span><button class="tn-tab-action">↗</button></div>
+					<div class="tn-item"><input type="checkbox" class="tn-check" /><span class="tn-item-link"><span class="tn-item-name">Export to PDF cuts off the last page</span><span class="tn-item-meta">Active · Joined</span></span><button class="tn-tab-action">↗</button></div>
+					<div class="tn-item"><input type="checkbox" class="tn-check" /><span class="tn-item-link"><span class="tn-item-name">Dark mode for the dashboard?</span><span class="tn-item-meta">Active · Joined</span></span><button class="tn-tab-action">↗</button></div>
+					<div class="tn-item tn-item-checked"><input type="checkbox" class="tn-check on" /><span class="tn-item-link"><span class="tn-item-name">Webhooks stopped firing overnight</span><span class="tn-item-meta">Active</span></span><button class="tn-tab-action">↗</button></div>
+					<div class="tn-item"><input type="checkbox" class="tn-check" /><span class="tn-item-link"><span class="tn-item-name">Billing page shows the wrong currency</span><span class="tn-item-meta">Active · Joined</span></span><button class="tn-tab-action">↗</button></div>
+					<div class="tn-item tn-item-checked"><input type="checkbox" class="tn-check on" /><span class="tn-item-link"><span class="tn-item-name">Feature request: keyboard shortcuts</span><span class="tn-item-meta">Active</span></span><button class="tn-tab-action">↗</button></div>
+				</div>
+				<div class="tn-bulk">
+					<input type="checkbox" class="tn-check some" />
+					<span class="tn-bulk-count">3 selected</span>
+					<button>Join (2)</button>
+					<button>Leave (1)</button>
+					<button>Mark read (1)</button>
+					<button class="tn-danger">Close (3)</button>
+					<button class="tn-danger">Close &amp; lock (3)</button>
+					<button disabled>Reopen</button>
+					<button>Clear</button>
+					<button>Done</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

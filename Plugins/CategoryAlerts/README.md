@@ -1,6 +1,8 @@
 # CategoryAlerts
 
-CategoryAlerts notifies you when a new channel is created, or a new message is posted, inside a category you choose. An example is a **Tickets** section where each ticket gets its own channel. Discord has no notification setting for categories, so new ticket channels are easy to miss. Each kind of alert has its own sound, so you can tell a work alert from ordinary Discord pings.
+![CategoryAlerts category menu, a desktop notification, and an in-app toast](../../docs/images/categoryalerts.png)
+
+Get notified when something happens in a category you care about. Right-click a category to get alerts for new channels, new messages, or both. Each kind of alert has its own sound.
 
 ## Use
 
@@ -11,7 +13,7 @@ Right-click a category in the channel list and turn on either or both:
 
 A bot message posted within 30 seconds of the new channel, like a ticket bot's welcome message, counts as part of the new-channel alert and doesn't alert again.
 
-Each alert can show a desktop notification (macOS Notification Center), an in-app toast, or both. Clicking the desktop notification opens the channel or message.
+Each alert can show a desktop notification (Notification Center on macOS, the notification area on Windows), an in-app toast, or both. Clicking the desktop notification opens the channel or message.
 
 Plugin settings let you:
 
@@ -25,7 +27,7 @@ Plugin settings let you:
 1. [Download CategoryAlerts.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/CategoryAlerts/CategoryAlerts.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and enable **CategoryAlerts** in BetterDiscord's Plugins settings.
 
-Alerts only arrive while Discord is running and connected. Threads are ignored. Desktop notifications need notifications for Discord turned on in macOS System Settings > Notifications. Streamer Mode mutes the alert sounds, like Discord's own sounds.
+Alerts only arrive while Discord is running and connected. Threads are ignored. Desktop notifications need notifications for Discord turned on in your system's notification settings (System Settings > Notifications on macOS, Settings > System > Notifications on Windows). Streamer Mode mutes the alert sounds, like Discord's own sounds.
 
 ## Develop
 
