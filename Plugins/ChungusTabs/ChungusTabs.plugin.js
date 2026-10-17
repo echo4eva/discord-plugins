@@ -1,9 +1,9 @@
 /**
- * @name ChannelTabs
+ * @name ChungusTabs
  * @author echo4eva, l0c4lh057, CarJem Generations, samfundev
  * @description Browser-style tabs, folders, and bookmarks for Discord.
  * @version 3.0.0
- * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabs/index.jsx
+ * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChungusTabs/index.jsx
  */
 /*@cc_on
 @if (@_jscript)
@@ -52,7 +52,7 @@ const CHANGES = {
 		fixed: ["Add macOS ChannelTabs variant"],
 	},
 };
-// src/ChannelTabs/index.jsx
+// src/ChungusTabs/index.jsx
 var pluginMeta;
 var IS_MAC = typeof process !== "undefined" && process.platform === "darwin";
 var TAB_SHORTCUTS = {
@@ -461,7 +461,7 @@ ${trace}`);
 		missingFeatures.push(feature);
 		if (dismissWarning) dismissWarning();
 		const content = BdApi.DOM.parseHTML(
-			`<span style="background: white; color: var(--color); padding: 1px 3px; margin-right: 3px; border-radius: 5px;">ChannelTabs</span> These features are unavailable: ${missingFeatures.join(", ")}`,
+			`<span style="background: white; color: var(--color); padding: 1px 3px; margin-right: 3px; border-radius: 5px;">ChungusTabs</span> These features are unavailable: ${missingFeatures.join(", ")}`,
 			true,
 		);
 		dismissWarning = BdApi.UI.showNotice(content, {
@@ -740,7 +740,7 @@ function CreateGuildContextMenuChildren(instance, props, channel) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -790,7 +790,7 @@ function CreateTextChannelContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -829,7 +829,7 @@ function CreateThreadChannelContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -868,7 +868,7 @@ function CreateDMContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -911,7 +911,7 @@ function CreateGroupContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -6200,7 +6200,7 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 							id: "privacyMode",
 							type: "switch",
 							name: "Enable Privacy Mode",
-							note: "Obfusicates all the Sensitive Text in ChannelTabs",
+							note: "Obfusicates all the Sensitive Text in ChungusTabs",
 							value: this.settings.privacyMode,
 							onChange: (checked) => {
 								this.settings.privacyMode = checked;

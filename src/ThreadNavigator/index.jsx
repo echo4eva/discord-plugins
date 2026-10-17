@@ -68,8 +68,8 @@ class ThreadMenuBoundary extends React.Component {
 	}
 }
 
-// ChannelTabs (from echo4eva/discord-plugins) shares its tabs through this
-// global; versions named ChannelTabsMac used the older name.
+// ChungusTabs (from echo4eva/discord-plugins) shares its tabs through this
+// global; ChannelTabsMac and ChannelTabs builds used older names.
 const tabApi = () =>
 	globalThis.__ChannelTabsTabAPI ?? globalThis.__ChannelTabsMacTabAPI;
 
@@ -286,7 +286,7 @@ module.exports = class ThreadNavigator {
 	}
 
 	// Open state belongs to a tab and a channel, so a new tab on a thread from
-	// this channel starts with normal chat. Without ChannelTabs it is just
+	// this channel starts with normal chat. Without ChungusTabs it is just
 	// per channel.
 	browserKey(channel) {
 		const tabId = tabApi()?.getActiveTabId?.() ?? "";
@@ -713,7 +713,7 @@ module.exports = class ThreadNavigator {
 		if (badges.childElementCount) item.append(badges);
 		const tab = node("button", "tn-tab-action", "↗");
 		tab.type = "button";
-		tab.title = "Open in a ChannelTabs tab";
+		tab.title = "Open in a ChungusTabs tab";
 		tab.setAttribute("aria-label", `Open ${thread.name} in a new tab`);
 		tab.addEventListener("click", (event) => {
 			event.preventDefault();
@@ -1104,7 +1104,7 @@ module.exports = class ThreadNavigator {
 				)
 			)
 				return;
-			UI.showToast("Enable ChannelTabs to open a new tab.", {
+			UI.showToast("Enable ChungusTabs to open a new tab.", {
 				type: "info",
 			});
 			return;

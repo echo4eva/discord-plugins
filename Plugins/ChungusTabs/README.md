@@ -1,6 +1,6 @@
-# ChannelTabs
+# ChungusTabs
 
-![ChannelTabs tab row with tab folders and the bookmark row](../../docs/images/channeltabs-overview.png)
+![ChungusTabs tab row with tab folders and the bookmark row](../../docs/images/channeltabs-overview.png)
 
 Browser-style tabs for Discord. Group tabs into folders, close a folder to save it for later, and drag tabs and bookmarks wherever you want. Each tab remembers where you were scrolled, and on macOS the tab bar sits neatly beside the window buttons.
 
@@ -30,12 +30,12 @@ You can change every shortcut, or turn it off, in the plugin's settings.
 
 ## Install
 
-1. [Download ChannelTabs.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ChannelTabs/ChannelTabs.plugin.js).
+1. [Download ChungusTabs.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ChungusTabs/ChungusTabs.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and turn it on in BetterDiscord's Plugins settings.
-3. If you had the original ChannelTabs, this file replaces it. Turn off **ChannelTabsMac** if you used this plugin under its old name, and delete its file.
+3. ChungusTabs runs alongside the original ChannelTabs, but the two both draw a tab bar, so turn the original off. If you used this plugin as **ChannelTabsMac** or **ChannelTabs**, turn that one off and delete its file.
 
-This is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, previously called ChannelTabsMac. It keeps its own settings, so tabs from the original ChannelTabs aren't copied over. Tabs saved under ChannelTabsMac carry over.
+This is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, previously called ChannelTabsMac and then ChannelTabs. It keeps its own settings, so tabs from the original ChannelTabs aren't copied over. Tabs saved under ChannelTabsMac carry over.
 
 ## Develop
 
-Edit [`src/ChannelTabs/index.jsx`](../../src/ChannelTabs/index.jsx), then run `npm run build:tabs` from the repository root.
+Edit [`src/ChungusTabs/index.jsx`](../../src/ChungusTabs/index.jsx), then run `npm run build:tabs` from the repository root.

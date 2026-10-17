@@ -4,7 +4,7 @@ import bdPlugin from "./bd-plugin.ts";
 
 const ctx = await context({
 	entryPoints: process.argv.includes("--tabs")
-		? ["src/ChannelTabs/index.jsx"]
+		? ["src/ChungusTabs/index.jsx"]
 		: process.argv.includes("--thread-navigator")
 			? ["src/ThreadNavigator/index.jsx"]
 			: process.argv.includes("--category-alerts")

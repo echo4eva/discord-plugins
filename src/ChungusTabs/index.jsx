@@ -410,8 +410,9 @@ function restoreTabScroll(tab) {
 
 //#endregion
 
-// Saved data keeps the plugin's former name, ChannelTabsMac. The original
-// ChannelTabs plugin already stores its own data under "ChannelTabs".
+// Saved data keeps the plugin's first name, ChannelTabsMac, so settings and
+// tabs carry over. The original ChannelTabs plugin stores its own data under
+// "ChannelTabs".
 const DATA_NAME = "ChannelTabsMac";
 
 const { ContextMenu, Patcher, Webpack, React, DOM, ReactUtils, UI } = new BdApi(
@@ -459,7 +460,7 @@ function missingModule({ name = "<unnamed>", feature, fatal = false }) {
 
 		if (dismissWarning) dismissWarning();
 		const content = BdApi.DOM.parseHTML(
-			`<span style="background: white; color: var(--color); padding: 1px 3px; margin-right: 3px; border-radius: 5px;">ChannelTabs</span> These features are unavailable: ${missingFeatures.join(", ")}`,
+			`<span style="background: white; color: var(--color); padding: 1px 3px; margin-right: 3px; border-radius: 5px;">ChungusTabs</span> These features are unavailable: ${missingFeatures.join(", ")}`,
 			true,
 		);
 		dismissWarning = BdApi.UI.showNotice(content, {
@@ -736,7 +737,7 @@ function CreateGuildContextMenuChildren(instance, props, channel) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -787,7 +788,7 @@ function CreateTextChannelContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -827,7 +828,7 @@ function CreateThreadChannelContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -867,7 +868,7 @@ function CreateDMContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -911,7 +912,7 @@ function CreateGroupContextMenuChildren(instance, props) {
 			items: [
 				{
 					type: "submenu",
-					label: "ChannelTabs",
+					label: "ChungusTabs",
 					items: instance.mergeItems(
 						[
 							{
@@ -6332,7 +6333,7 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 							id: "privacyMode",
 							type: "switch",
 							name: "Enable Privacy Mode",
-							note: "Obfusicates all the Sensitive Text in ChannelTabs",
+							note: "Obfusicates all the Sensitive Text in ChungusTabs",
 							value: this.settings.privacyMode,
 							onChange: (checked) => {
 								this.settings.privacyMode = checked;

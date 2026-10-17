@@ -11,7 +11,7 @@ A better way to browse threads. Click the Threads button to see every thread in 
 - **Search and filter**: search by name, and filter by active or archived, joined or not joined.
 - **Unread first**: threads with mentions and new messages sit at the top, with red and blue badges.
 - **Right-click menu**: right-click a thread for the same menu you get in Discord's channel list.
-- **Open in a tab**: with this repository's [ChannelTabs](../ChannelTabs/README.md), the ↗ button opens a thread in a new tab, and each tab keeps its own list open or closed.
+- **Open in a tab**: with this repository's [ChungusTabs](../ChungusTabs/README.md), the ↗ button opens a thread in a new tab, and each tab keeps its own list open or closed.
 
 ## Bulk actions
 
@@ -30,7 +30,7 @@ Closing and locking need the Manage Threads permission.
 
 1. [Download ThreadNavigator.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ThreadNavigator/ThreadNavigator.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and turn it on in BetterDiscord's Plugins settings.
-3. Optional: install this repository's [ChannelTabs](../ChannelTabs/README.md) to open threads in tabs.
+3. Optional: install this repository's [ChungusTabs](../ChungusTabs/README.md) to open threads in tabs.
 
 ## Develop
 

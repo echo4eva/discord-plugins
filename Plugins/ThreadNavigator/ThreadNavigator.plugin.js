@@ -301,7 +301,7 @@ module.exports = class ThreadNavigator {
 		);
 	}
 	// Open state belongs to a tab and a channel, so a new tab on a thread from
-	// this channel starts with normal chat. Without ChannelTabs it is just
+	// this channel starts with normal chat. Without ChungusTabs it is just
 	// per channel.
 	browserKey(channel) {
 		const tabId = tabApi()?.getActiveTabId?.() ?? "";
@@ -713,7 +713,7 @@ module.exports = class ThreadNavigator {
 		if (badges.childElementCount) item.append(badges);
 		const tab = node("button", "tn-tab-action", "\u2197");
 		tab.type = "button";
-		tab.title = "Open in a ChannelTabs tab";
+		tab.title = "Open in a ChungusTabs tab";
 		tab.setAttribute("aria-label", `Open ${thread.name} in a new tab`);
 		tab.addEventListener("click", (event) => {
 			event.preventDefault();
@@ -1086,7 +1086,7 @@ module.exports = class ThreadNavigator {
 				)
 			)
 				return;
-			UI.showToast("Enable ChannelTabs to open a new tab.", {
+			UI.showToast("Enable ChungusTabs to open a new tab.", {
 				type: "info",
 			});
 			return;

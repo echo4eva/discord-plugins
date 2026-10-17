@@ -1,7 +1,7 @@
 {
 	"name": "discord-plugins",
 	"version": "1.0.0",
-	"description": "echo4eva's BetterDiscord plugins: ChannelTabs, ThreadNavigator, and CategoryAlerts",
+	"description": "echo4eva's BetterDiscord plugins: ChungusTabs, ThreadNavigator, and CategoryAlerts",
 	"type": "module",
 	"scripts": {
 		"dev": "node --watch lib/dev.ts",

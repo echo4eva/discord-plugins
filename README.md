@@ -2,11 +2,11 @@
 
 BetterDiscord plugins by echo4eva.
 
-## [ChannelTabs](Plugins/ChannelTabs/README.md)
+## [ChungusTabs](Plugins/ChungusTabs/README.md)
 
 Browser-style tabs for Discord. Group tabs into folders, close a folder to save it for later, and drag tabs and bookmarks wherever you want. Each tab remembers where you were scrolled, and on macOS the tab bar sits neatly beside the window buttons.
 
-![ChannelTabs tab row with tab folders and the bookmark row](docs/images/channeltabs-overview.png)
+![ChungusTabs tab row with tab folders and the bookmark row](docs/images/channeltabs-overview.png)
 
 ## [ThreadNavigator](Plugins/ThreadNavigator/README.md)
 
@@ -22,7 +22,7 @@ Get notified when something happens in a category you care about. Right-click a 
 
 ## Credits
 
-This ChannelTabs is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, maintained by samfundev and contributors in [samfundev/BetterDiscordStuff](https://github.com/samfundev/BetterDiscordStuff). This repository started from that one and keeps its git history and build tooling. It was previously called ChannelTabsMac. ThreadNavigator and CategoryAlerts are original to this repository.
+ChungusTabs is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, maintained by samfundev and contributors in [samfundev/BetterDiscordStuff](https://github.com/samfundev/BetterDiscordStuff). This repository started from that one and keeps its git history and build tooling. It was previously called ChannelTabsMac, then ChannelTabs. ThreadNavigator and CategoryAlerts are original to this repository.
 
 Everything here is under the [MIT license](LICENSE), which keeps the original ChannelTabs copyright notice.
 
@@ -34,7 +34,7 @@ If you have a problem with something, please [open an issue about it](https://gi
 
 Edit the files in `src`, then run `npm ci` and one of these from the repository root to build into `Plugins`:
 
-- `npm run build:tabs` for ChannelTabs
+- `npm run build:tabs` for ChungusTabs
 - `npm run build:threads` for ThreadNavigator
 - `npm run build:alerts` for CategoryAlerts
 - `npm run build` for all of them

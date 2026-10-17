@@ -1,8 +1,12 @@
 {
 	"description": "Browser-style tabs, folders, and bookmarks for Discord.",
 	"version": "3.0.0",
-	"name": "channel-tabs",
-	"changelogPaths": ["src/ChannelTabs", "src/ChannelTabsMac"],
+	"name": "chungus-tabs",
+	"changelogPaths": [
+		"src/ChungusTabs",
+		"src/ChannelTabs",
+		"src/ChannelTabsMac"
+	],
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/echo4eva/discord-plugins"
