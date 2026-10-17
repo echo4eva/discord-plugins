@@ -12,7 +12,7 @@ This fork includes [ChannelTabsMac](Plugins/ChannelTabsMac/README.md), a macOS v
 
 ## CategoryAlerts
 
-[CategoryAlerts](Plugins/CategoryAlerts/README.md) notifies you when a new channel is created in a category you watch, such as a ticket section, since Discord has no notification setting for categories.
+[CategoryAlerts](Plugins/CategoryAlerts/README.md) notifies you, with its own sounds, when a new channel or message appears in a category you watch, such as a ticket section, since Discord has no notification setting for categories.
 
 ### Problems
 

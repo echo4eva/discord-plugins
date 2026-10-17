@@ -1,20 +1,31 @@
 # CategoryAlerts
 
-CategoryAlerts notifies you when a new channel is created inside a category you choose, for example a **Tickets** section where each ticket gets its own channel. Discord has no notification setting for categories, so new ticket channels are easy to miss.
+CategoryAlerts notifies you when a new channel is created, or a new message is posted, inside a category you choose. An example is a **Tickets** section where each ticket gets its own channel. Discord has no notification setting for categories, so new ticket channels are easy to miss. Each kind of alert has its own sound, so you can tell a work alert from ordinary Discord pings.
 
 ## Use
 
-1. Right-click a category in the channel list and choose **Alert on new channels**. Choose it again to stop watching.
-2. When a channel appears in that category you get a desktop notification, an in-app toast, or both. Clicking the desktop notification opens the new channel.
+Right-click a category in the channel list and turn on either or both:
 
-Plugin settings let you turn the desktop notification, its sound, and the toast on or off, and list the watched categories so you can remove them.
+- **Alert on new channels**: fires when a channel appears in the category, for example a new ticket.
+- **Alert on new messages**: fires when someone other than you posts in a channel in that category, even if you are looking at it.
+
+A bot message posted within 30 seconds of the new channel, like a ticket bot's welcome message, counts as part of the new-channel alert and doesn't alert again.
+
+Each alert can show a desktop notification (macOS Notification Center), an in-app toast, or both. Clicking the desktop notification opens the channel or message.
+
+Plugin settings let you:
+
+- turn the desktop notification and the toast on or off
+- pick a sound for new channels and a separate one for new messages from Discord's built-in sounds; picking one plays a preview
+- set the alert volume
+- see the watched categories and remove them
 
 ## Install
 
 1. [Download CategoryAlerts.plugin.js](https://raw.githubusercontent.com/echo4eva/BetterDiscordStuff/master/Plugins/CategoryAlerts/CategoryAlerts.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and enable **CategoryAlerts** in BetterDiscord's Plugins settings.
 
-Alerts only arrive while Discord is running and connected. Threads are ignored; only channels created directly in the watched category trigger an alert.
+Alerts only arrive while Discord is running and connected. Threads are ignored. Desktop notifications need notifications for Discord turned on in macOS System Settings > Notifications. Streamer Mode mutes the alert sounds, like Discord's own sounds.
 
 ## Develop
 

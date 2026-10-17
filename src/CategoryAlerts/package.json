@@ -1,6 +1,6 @@
 {
-	"description": "Notifies you when a new channel appears in a category you watch, such as a ticket section.",
-	"version": "0.1.0",
+	"description": "Notifies you, with its own sounds, when a new channel or message appears in a category you watch, such as a ticket section.",
+	"version": "0.2.0",
 	"name": "category-alerts",
 	"repository": {
 		"type": "git",
