@@ -148,34 +148,57 @@ export default {
 
 				metaComment = `/**\n${fields.map(([k, v]) => `* @${k} ${v}`).join("\n")}\n*/\n`;
 
-				// Changelog
-				// TODO: support multiple plugins
-				const { all } = await git.log(["--stat=4096"]);
+				// Changelog, built from the commits that touched this plugin's source.
+				// `changelogPaths` in its package.json lists folders it used to live
+				// in, newest first, so history survives a rename.
+				const pluginDir = dirname(output.entryPoint);
+				const packageJson = JSON.parse(
+					await readFile(join(pluginDir, "package.json"), "utf8"),
+				);
+				const dirs: string[] = [
+					pluginDir,
+					...(packageJson.changelogPaths ?? []),
+				];
+				const { all } = await git.log([
+					"--stat=4096",
+					"--no-renames",
+					"--",
+					...dirs,
+				]);
 				const versions = {};
 				let version = null;
-				const packagePath = join(dirname(output.entryPoint), "package.json");
+				const packagePaths = dirs.map((dir) => join(dir, "package.json"));
+				// Older folders win, since the current path may have held another
+				// plugin before the rename.
+				const lookupOrder = [...packagePaths.slice(1), packagePaths[0]];
+				const oldestPackagePath = packagePaths[packagePaths.length - 1];
 
 				async function getVersion(line: DefaultLogFields) {
-					return JSON.parse(
-						await git.show(`${line.hash}:${packagePath}`).catch(() => "{}"),
-					).version;
+					for (const path of lookupOrder) {
+						const content = await git
+							.show(`${line.hash}:${path}`)
+							.catch(() => null);
+						if (content) return JSON.parse(content).version;
+					}
+					return undefined;
 				}
 
 				// If we're trying to bump the version, include the uncommitted version
-				const uncommittedVersion = JSON.parse(
-					await readFile(packagePath, "utf8"),
-				).version;
-				const committedVersion = await getVersion(all[0]);
+				const uncommittedVersion = packageJson.version;
+				const committedVersion = all[0] ? await getVersion(all[0]) : undefined;
 				if (uncommittedVersion != committedVersion)
 					version = uncommittedVersion;
 
 				for (const line of all) {
 					let createdHere = false;
-					if ((line.diff?.files ?? []).some((f) => f.file === packagePath)) {
-						version = await getVersion(line);
-						createdHere = !(await git
-							.show(`${line.hash}^:${packagePath}`)
-							.catch(() => null));
+					const files = (line.diff?.files ?? []).map((f) => f.file);
+					if (packagePaths.some((path) => files.includes(path))) {
+						version = (await getVersion(line)) ?? version;
+						createdHere =
+							files.includes(oldestPackagePath) &&
+							!(await git
+								.show(`${line.hash}^:${oldestPackagePath}`)
+								.catch(() => null));
 					}
 
 					if (!version) continue;
