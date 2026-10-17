@@ -1,6 +1,6 @@
 {
 	"description": "A central thread browser that opens selected threads in Discord’s side chat.",
-	"version": "0.2.3",
+	"version": "0.4.4",
 	"name": "thread-navigator",
 	"repository": {
 		"type": "git",
