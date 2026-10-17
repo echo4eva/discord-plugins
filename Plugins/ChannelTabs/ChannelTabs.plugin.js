@@ -2,7 +2,7 @@
  * @name ChannelTabs
  * @author echo4eva, l0c4lh057, CarJem Generations, samfundev
  * @description Browser-style tabs, folders, and bookmarks for Discord.
- * @version 2.8.9-mac.27
+ * @version 3.0.0
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabs/index.jsx
  */
 /*@cc_on
@@ -39,28 +39,16 @@ const CHANGES = {
 			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
 		],
 	},
-	"2.8.9-mac.9": {
-		added: ["Organize ChannelTabsMac tabs in folders"],
-	},
-	"2.8.9-mac.8": {
-		added: ["Navigate tabs by number and open servers in tabs"],
-	},
-	"2.8.9-mac.7": {
-		added: ["Close Discord window from last tab shortcut"],
-	},
-	"2.8.9-mac.6": {
-		added: ["Open ChannelTabsMac bookmarks with tab shortcut"],
-	},
-	"2.8.9-mac.5": {
-		added: ["Configurable close-tab shortcut for ChannelTabsMac"],
-	},
-	"2.8.9-mac.4": {
-		added: ["thread sidebar and full browser for Discord"],
-	},
-	"2.8.9-mac.3": {
-		added: ["Configurable sidebar click shortcut for new tabs"],
-	},
-	"2.8.9-mac.2": {
+	"2.8.9": {
+		added: [
+			"Organize ChannelTabsMac tabs in folders",
+			"Navigate tabs by number and open servers in tabs",
+			"Close Discord window from last tab shortcut",
+			"Open ChannelTabsMac bookmarks with tab shortcut",
+			"Configurable close-tab shortcut for ChannelTabsMac",
+			"thread sidebar and full browser for Discord",
+			"Configurable sidebar click shortcut for new tabs",
+		],
 		fixed: ["Add macOS ChannelTabs variant"],
 	},
 };
