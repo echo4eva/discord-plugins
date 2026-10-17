@@ -22,7 +22,7 @@ Plugin settings let you:
 
 ## Install
 
-1. [Download CategoryAlerts.plugin.js](https://raw.githubusercontent.com/echo4eva/BetterDiscordStuff/master/Plugins/CategoryAlerts/CategoryAlerts.plugin.js).
+1. [Download CategoryAlerts.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/CategoryAlerts/CategoryAlerts.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and enable **CategoryAlerts** in BetterDiscord's Plugins settings.
 
 Alerts only arrive while Discord is running and connected. Threads are ignored. Desktop notifications need notifications for Discord turned on in macOS System Settings > Notifications. Streamer Mode mutes the alert sounds, like Discord's own sounds.

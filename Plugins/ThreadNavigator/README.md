@@ -16,7 +16,7 @@ Requests go one at a time with a short pause to stay within Discord's rate limit
 
 ## Install
 
-1. [Download ThreadNavigator.plugin.js](https://raw.githubusercontent.com/echo4eva/BetterDiscordStuff/master/Plugins/ThreadNavigator/ThreadNavigator.plugin.js).
+1. [Download ThreadNavigator.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ThreadNavigator/ThreadNavigator.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and enable **ThreadNavigator** in BetterDiscord's Plugins settings.
 3. Optionally install and enable [ChannelTabsMac](../ChannelTabsMac/README.md) for new-tab actions.
 

@@ -4,7 +4,7 @@
 	"name": "category-alerts",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/echo4eva/BetterDiscordStuff"
+		"url": "https://github.com/echo4eva/discord-plugins"
 	},
 	"ownMaintainersOnly": true,
 	"funding": "",

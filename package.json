@@ -1,7 +1,7 @@
 {
-	"name": "betterdiscordstuff",
+	"name": "discord-plugins",
 	"version": "1.0.0",
-	"description": "all my stuff for betterdiscord",
+	"description": "echo4eva's BetterDiscord plugins: ChannelTabsMac, ThreadNavigator, and CategoryAlerts",
 	"type": "module",
 	"scripts": {
 		"dev": "node --watch lib/dev.ts",
@@ -13,11 +13,9 @@
 	},
 	"maintainers": [
 		{
-			"name": "samfundev",
-			"discord_id": "76052829285916672"
+			"name": "echo4eva"
 		}
 	],
-	"funding": "https://github.com/sponsors/samfundev",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/betterdiscord": "github:zerthox/betterdiscord-types",
@@ -29,7 +27,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/samfundev/BetterDiscordStuff"
+		"url": "https://github.com/echo4eva/discord-plugins"
 	},
 	"workspaces": [
 		"Plugins/*"
