@@ -669,7 +669,10 @@ module.exports = class ThreadNavigator {
 				this.selectThread(thread, event.shiftKey);
 				return;
 			}
-			this.openThread(thread, event.metaKey);
+			this.openThread(
+				thread,
+				process.platform === "darwin" ? event.metaKey : event.ctrlKey,
+			);
 		});
 		const main = node("span", "tn-item-main");
 		main.append(node("span", "tn-item-name", thread.name));
