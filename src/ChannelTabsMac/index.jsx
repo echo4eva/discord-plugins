@@ -98,7 +98,17 @@ function getTabDisplayItems(tabs, folders) {
 	const items = [];
 	const shownFolders = new Set();
 	const validFolders = new Map(folders.map((folder) => [folder.id, folder]));
+	const emptyFolders = folders.filter(
+		(folder) => !tabs.some((tab) => tab.folderId === folder.id),
+	);
+	const addEmptyFolders = (index) => {
+		for (const folder of emptyFolders) {
+			if (Math.min(folder.position ?? tabs.length, tabs.length) === index)
+				items.push({ type: "folder", folder, tabs: [] });
+		}
+	};
 	tabs.forEach((tab, tabIndex) => {
+		addEmptyFolders(tabIndex);
 		const folder = validFolders.get(tab.folderId);
 		if (!folder) {
 			items.push({ type: "tab", tab, tabIndex });
@@ -113,9 +123,82 @@ function getTabDisplayItems(tabs, folders) {
 		if (!folder.collapsed)
 			items.push(...folderTabs.map((item) => ({ type: "tab", ...item })));
 	});
-	for (const folder of folders) {
-		if (!shownFolders.has(folder.id))
-			items.push({ type: "folder", folder, tabs: [] });
+	addEmptyFolders(tabs.length);
+	return items;
+}
+
+function moveFolderGroup(tabs, folders, folderId, target, after) {
+	const moving = tabs.filter((tab) => tab.folderId === folderId);
+	const remaining = tabs.filter((tab) => tab.folderId !== folderId);
+	const targetFolderId =
+		target.type === "folder" ? target.id : tabs[target.index]?.folderId;
+	if (targetFolderId === folderId) return { tabs, folders };
+	const targetFolder = folders.find((folder) => folder.id === targetFolderId);
+	const targetTabs = targetFolderId
+		? remaining.filter((tab) => tab.folderId === targetFolderId)
+		: [];
+	let index;
+	if (targetTabs.length) {
+		index = remaining.indexOf(after ? targetTabs.at(-1) : targetTabs[0]);
+		if (after) index++;
+	} else if (targetFolder) {
+		index = Math.min(
+			targetFolder.position ?? remaining.length,
+			remaining.length,
+		);
+	} else {
+		const targetTab = tabs[target.index];
+		index = remaining.indexOf(targetTab);
+		if (index < 0) return { tabs, folders };
+		if (after) index++;
+	}
+	remaining.splice(index, 0, ...moving);
+	let nextFolders = folders.map((folder) => {
+		if (folder.id === folderId)
+			return { ...folder, position: moving.length ? null : index };
+		if (folder.position == null) return folder;
+		const oldPosition = Math.min(folder.position, tabs.length);
+		const keptBefore = tabs
+			.slice(0, oldPosition)
+			.filter((tab) => tab.folderId !== folderId).length;
+		const shifted =
+			moving.length &&
+			index <= keptBefore &&
+			!(folder.id === targetFolderId && after);
+		return {
+			...folder,
+			position: keptBefore + (shifted ? moving.length : 0),
+		};
+	});
+	if (targetFolder && !targetTabs.length) {
+		const movingFolder = nextFolders.find((folder) => folder.id === folderId);
+		nextFolders = nextFolders.filter((folder) => folder.id !== folderId);
+		const targetIndex = nextFolders.findIndex(
+			(folder) => folder.id === targetFolderId,
+		);
+		nextFolders.splice(targetIndex + (after ? 1 : 0), 0, movingFolder);
+	}
+	return { tabs: remaining, folders: nextFolders };
+}
+
+// The bookmark row is the loose bookmarks in order, with each group sitting
+// before the loose bookmark at its saved `position` (groups saved before
+// positions existed sit at the start).
+function getFavRowItems(favs, favGroups) {
+	const loose = favs.filter((fav) => fav && fav.groupId === -1);
+	const groups = favGroups
+		.map((group, order) => ({
+			group,
+			order,
+			position: Math.min(Math.max(group.position ?? 0, 0), loose.length),
+		}))
+		.sort((a, b) => a.position - b.position || a.order - b.order);
+	const items = [];
+	let next = 0;
+	for (let i = 0; i <= loose.length; i++) {
+		while (next < groups.length && groups[next].position === i)
+			items.push({ type: "group", item: groups[next++].group });
+		if (i < loose.length) items.push({ type: "fav", item: loose[i] });
 	}
 	return items;
 }
@@ -133,6 +216,164 @@ function moveTabIntoFolder(tabs, tabIndex, folderId) {
 	});
 	return remaining;
 }
+
+//#region Scroll Memory
+
+// Each tab remembers where the channel list (left), the chat messages (middle)
+// and the member list (right) were scrolled, and puts them back when you
+// switch to that tab. The state lives on the tab as `tab.scroll`.
+const SCROLL_PANES = {
+	channels: [
+		'[data-list-id="channels"]',
+		'[data-list-id^="private-channels"]',
+		'[class*="sidebarList"] [class*="scroller"]',
+		'[class*="privateChannels"] [class*="scroller"]',
+	],
+	messages: [
+		'[data-list-id="chat-messages"]',
+		'main [class*="messagesWrapper"] [class*="scroller"]',
+	],
+	members: [
+		'[data-list-id^="members"]',
+		'[class*="membersWrap"] [class*="scroller"]',
+		'[class*="members_"] [class*="scroller"]',
+	],
+};
+const SCROLL_RESTORE_MS = { channels: 1500, members: 1500, messages: 2500 };
+let scrollCaptureBlockedUntil = 0;
+let scrollRestoreToken = 0;
+
+function isScrollable(element) {
+	return /auto|scroll|overlay/.test(getComputedStyle(element).overflowY);
+}
+
+function findScroller(pane) {
+	for (const selector of SCROLL_PANES[pane]) {
+		let element = document.querySelector(selector);
+		while (element && element !== document.body && !isScrollable(element))
+			element = element.parentElement;
+		if (element && element !== document.body) return element;
+	}
+	return null;
+}
+
+function parseScrollLocation(url) {
+	const [, , guildKey] = String(url ?? "").split("/");
+	return { guildKey: guildKey ?? null, url };
+}
+
+function getMessageAnchor(scroller) {
+	if (scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 8)
+		return { atBottom: true };
+	const top = scroller.getBoundingClientRect().top;
+	for (const item of scroller.querySelectorAll('[id^="chat-messages-"]')) {
+		const rect = item.getBoundingClientRect();
+		if (rect.bottom <= top + 1) continue;
+		const [, , channelId, messageId] = item.id.split("-");
+		if (!channelId || !messageId) continue;
+		return { channelId, messageId, offset: rect.top - top };
+	}
+	return null;
+}
+
+// Reads the three panes into the selected tab. Mutates the tab in place so
+// scrolling never re-renders the tab bar.
+function captureTabScroll(tabs) {
+	if (Date.now() < scrollCaptureBlockedUntil) return false;
+	const tab = tabs?.find((item) => item.selected);
+	if (!tab || tab.url !== location.pathname) return false;
+	const { guildKey, url } = parseScrollLocation(tab.url);
+	const scroll = { ...tab.scroll };
+	const channels = findScroller("channels");
+	if (channels) scroll.channels = { guildKey, top: channels.scrollTop };
+	const members = findScroller("members");
+	if (members) scroll.members = { guildKey, top: members.scrollTop };
+	const messages = findScroller("messages");
+	const anchor = messages && getMessageAnchor(messages);
+	if (anchor) scroll.messages = { url, ...anchor };
+	if (JSON.stringify(scroll) === JSON.stringify(tab.scroll)) return false;
+	tab.scroll = scroll;
+	return true;
+}
+
+function applyScrollPane(pane, saved, attempt) {
+	const scroller = findScroller(pane);
+	if (!scroller || scroller.scrollHeight <= scroller.clientHeight) return;
+	if (pane !== "messages") {
+		scroller.scrollTop = saved.top;
+		return;
+	}
+	if (saved.atBottom) {
+		scroller.scrollTop = scroller.scrollHeight;
+		return;
+	}
+	const item = document.getElementById(
+		`chat-messages-${saved.channelId}-${saved.messageId}`,
+	);
+	if (item) {
+		const offset =
+			item.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+		scroller.scrollTop += offset - saved.offset;
+	} else if (attempt === 6) {
+		// The anchor message fell out of Discord's cache, so ask Discord to load it.
+		MessageActions?.jumpToMessage?.({
+			channelId: saved.channelId,
+			messageId: saved.messageId,
+			flash: false,
+			jumpType: "INSTANT",
+		});
+	}
+}
+
+// Discord redraws asynchronously after a navigation, so keep nudging the
+// panes into place until they have content, stopping if the user scrolls.
+function restoreTabScroll(tab) {
+	const token = ++scrollRestoreToken;
+	const scroll = tab?.scroll;
+	const { guildKey } = parseScrollLocation(tab?.url);
+	const panes = Object.keys(SCROLL_PANES).filter((pane) => {
+		const saved = scroll?.[pane];
+		if (!saved) return false;
+		return pane === "messages"
+			? saved.url === tab.url
+			: saved.guildKey === guildKey;
+	});
+	const started = Date.now();
+	const longest = Math.max(0, ...panes.map((pane) => SCROLL_RESTORE_MS[pane]));
+	scrollCaptureBlockedUntil = started + longest + 300;
+	if (!panes.length) return;
+
+	const stop = () => {
+		if (token !== scrollRestoreToken) return;
+		scrollRestoreToken++;
+		scrollCaptureBlockedUntil = Date.now() + 300;
+		cleanup();
+	};
+	const cleanup = () => {
+		window.removeEventListener("wheel", stop, true);
+		window.removeEventListener("pointerdown", stop, true);
+		window.removeEventListener("keydown", stop, true);
+	};
+	window.addEventListener("wheel", stop, true);
+	window.addEventListener("pointerdown", stop, true);
+	window.addEventListener("keydown", stop, true);
+
+	let attempt = 0;
+	const tick = () => {
+		if (token !== scrollRestoreToken) return cleanup();
+		const elapsed = Date.now() - started;
+		for (const pane of panes) {
+			if (elapsed <= SCROLL_RESTORE_MS[pane])
+				applyScrollPane(pane, scroll[pane], attempt);
+		}
+		attempt++;
+		if (elapsed < longest) setTimeout(tick, 100);
+		else cleanup();
+	};
+	setTimeout(tick, 50);
+}
+
+//#endregion
 
 const { ContextMenu, Patcher, Webpack, React, DOM, ReactUtils, UI } = new BdApi(
 	"ChannelTabsMac",
@@ -222,6 +463,7 @@ const NavigationUtils = {
 	}),
 };
 const Permissions = getModule(byKeys("computePermissions"));
+const MessageActions = Webpack.getByKeys("jumpToMessage", "fetchMessages");
 const SelectedChannelStore = getModule(byStoreName("SelectedChannelStore"));
 const SelectedGuildStore = getModule(byStoreName("SelectedGuildStore"));
 const ChannelStore = getModule(byStoreName("ChannelStore"));
@@ -406,14 +648,41 @@ const SettingsMenuIcon = (
 var switching = false;
 var patches = [];
 
-var currentTabDragIndex = -1;
-var currentTabDragDestinationIndex = -1;
+var currentTabDrag = { index: -1, target: null };
+var currentFolderDrag = { current: null, target: null };
+var tabDropMarked = null;
+var suppressTabClickUntil = 0;
 
-var currentFavDragIndex = -1;
-var currentFavDragDestinationIndex = -1;
+const TAB_DROP_CLASSES = {
+	before: "channelTabs-tabDropBefore",
+	after: "channelTabs-tabDropAfter",
+	into: "channelTabs-tabDropInto",
+};
 
-var currentGroupDragIndex = -1;
-var currentGroupDragDestinationIndex = -1;
+function markTabDrop(element, kind) {
+	clearTabDropMarker();
+	tabDropMarked = element;
+	element.classList.add(TAB_DROP_CLASSES[kind]);
+}
+
+function clearTabDropMarker() {
+	tabDropMarked?.classList.remove(...Object.values(TAB_DROP_CLASSES));
+	tabDropMarked = null;
+}
+
+function endTabDrag() {
+	clearTabDropMarker();
+	currentTabDrag.index = -1;
+	currentTabDrag.target = null;
+	currentFolderDrag.current = null;
+	currentFolderDrag.target = null;
+	document.body.classList.remove("channelTabs-draggingTab");
+}
+
+var currentFavDrag = { fav: null, groupId: null, target: null, marked: null };
+var suppressFavClickUntil = 0;
+
+var currentGroupDrag = { group: null, target: null, marked: null };
 
 var currentGroupOpened = -1;
 
@@ -648,6 +917,36 @@ function CreateGroupContextMenuChildren(instance, props) {
 	]);
 }
 
+const SIDEBAR_LIST_SELECTOR = [
+	'[aria-label="Channels"]',
+	'[aria-label="Direct Messages"]',
+	'[data-list-id^="channels"]',
+	'[data-list-id^="private-channels"]',
+	'[class*="sidebarList"]',
+].join(", ");
+// Text, announcement, thread, forum and media channels; not categories or voice.
+const SIDEBAR_CHANNEL_TYPES = new Set([0, 5, 10, 11, 12, 15, 16]);
+
+function getDiscordLink(url) {
+	const origin = /^https:\/\/(?:\w+\.)?discord\.com$/.test(location.origin)
+		? location.origin
+		: "https://discord.com";
+	return origin + (url?.startsWith("/") ? url : "/" + (url ?? ""));
+}
+
+async function copyDiscordLink(url) {
+	const link = getDiscordLink(url);
+	try {
+		if (globalThis.DiscordNative?.clipboard?.copy)
+			DiscordNative.clipboard.copy(link);
+		else await navigator.clipboard.writeText(link);
+		UI.showToast("Link copied", { type: "success" });
+	} catch (error) {
+		console.error("Could not copy link:", error);
+		UI.showToast("Could not copy the link", { type: "error" });
+	}
+}
+
 function CreateTabContextMenu(props, e) {
 	ContextMenu.open(
 		e,
@@ -660,6 +959,10 @@ function CreateTabContextMenu(props, e) {
 							{
 								label: "Duplicate",
 								action: props.openInNewTab,
+							},
+							{
+								label: "Copy link",
+								action: () => copyDiscordLink(props.url),
 							},
 							{
 								label: "Add to favourites",
@@ -786,6 +1089,11 @@ function CreateTabFolderContextMenu(props, e) {
 					{
 						label: "Rename folder",
 						action: () => props.renameFolder(props.folder.id),
+					},
+					{
+						label: "Close folder",
+						subtext: "Save its tabs to reopen later",
+						action: () => props.closeFolder(props.folder.id),
 					},
 					{ type: "separator" },
 					{
@@ -2257,13 +2565,17 @@ const Tab = (props) => (
 			(props.selected ? " channelTabs-selected" : "") +
 			(props.minimized ? " channelTabs-minimized" : "") +
 			(props.hasUnread ? " channelTabs-unread" : "") +
-			(props.mentionCount > 0 ? " channelTabs-mention" : "")
+			(props.mentionCount > 0 ? " channelTabs-mention" : "") +
+			(props.folderId ? " channelTabs-inFolder" : "") +
+			(props.inActiveFolder ? " channelTabs-inActiveFolder" : "") +
+			(props.folderEnd ? " channelTabs-folderEnd" : "")
 		}
 		ref={props.ref}
 		data-mention-count={props.mentionCount}
 		data-unread-count={props.unreadCount}
 		data-unread-estimated={props.unreadEstimated}
 		onClick={() => {
+			if (Date.now() < suppressTabClickUntil) return;
 			if (!props.selected) props.switchToTab(props.tabIndex);
 		}}
 		onMouseUp={(e) => {
@@ -2274,48 +2586,56 @@ const Tab = (props) => (
 		onContextMenu={(e) => {
 			CreateTabContextMenu(props, e);
 		}}
-		onMouseOver={(e) => {
-			if (currentTabDragIndex == props.tabIndex || currentTabDragIndex == -1)
+		onMouseMove={(e) => {
+			const folderDrag = currentFolderDrag.current;
+			if (!folderDrag && currentTabDrag.index === -1) return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			const after = e.clientX > rect.left + rect.width / 2;
+			const target = { type: "tab", index: props.tabIndex, after };
+			if (
+				folderDrag
+					? props.folderId === folderDrag
+					: currentTabDrag.index === props.tabIndex
+			) {
+				if (folderDrag) currentFolderDrag.target = null;
+				else currentTabDrag.target = null;
+				clearTabDropMarker();
 				return;
-			currentTabDragDestinationIndex = props.tabIndex;
+			}
+			if (folderDrag) currentFolderDrag.target = target;
+			else currentTabDrag.target = target;
+			markTabDrop(e.currentTarget, after ? "after" : "before");
 		}}
 		onMouseDown={(e) => {
-			let mouseMove = (e2) => {
-				if (
-					Math.sqrt((e.pageX - e2.pageX) ** 2) > 20 ||
-					Math.sqrt((e.pageY - e2.pageY) ** 2) > 20
-				) {
-					currentTabDragIndex = props.tabIndex;
-					document.removeEventListener("mousemove", mouseMove);
-					document.removeEventListener("mouseup", mouseUp);
-					let dragging = (e3) => {
-						if (currentTabDragIndex != currentTabDragDestinationIndex) {
-							if (currentTabDragDestinationIndex != -1) {
-								props.moveTab(
-									currentTabDragIndex,
-									currentTabDragDestinationIndex,
-								);
-								currentTabDragDestinationIndex = currentTabDragDestinationIndex;
-								currentTabDragIndex = currentTabDragDestinationIndex;
-							}
-						}
-					};
-					let releasing = (e3) => {
-						document.removeEventListener("mousemove", dragging);
-						document.removeEventListener("mouseup", releasing);
-						currentTabDragIndex = -1;
-						currentTabDragDestinationIndex = -1;
-					};
-					document.addEventListener("mousemove", dragging);
-					document.addEventListener("mouseup", releasing);
-				}
+			if (e.button !== 0) return;
+			const startX = e.clientX;
+			const startY = e.clientY;
+			const moving = (event) => {
+				if (Math.hypot(event.clientX - startX, event.clientY - startY) < 8)
+					return;
+				currentTabDrag.index = props.tabIndex;
+				currentTabDrag.target = null;
+				suppressTabClickUntil = Date.now() + 1e3;
+				document.body.classList.add("channelTabs-draggingTab");
+				document.removeEventListener("mousemove", moving);
 			};
-			let mouseUp = (_) => {
-				document.removeEventListener("mousemove", mouseMove);
-				document.removeEventListener("mouseup", mouseUp);
+			const releasing = () => {
+				document.removeEventListener("mousemove", moving);
+				document.removeEventListener("mouseup", releasing, true);
+				window.removeEventListener("blur", releasing);
+				const { index, target } = currentTabDrag;
+				const dragged = index === props.tabIndex;
+				endTabDrag();
+				if (!dragged) return;
+				suppressTabClickUntil = Date.now() + 100;
+				if (target?.type === "tab")
+					props.moveTabTo(index, target.index, target.after);
+				else if (target?.type === "folder")
+					props.moveTabToFolder(index, target.id);
 			};
-			document.addEventListener("mousemove", mouseMove);
-			document.addEventListener("mouseup", mouseUp);
+			document.addEventListener("mousemove", moving);
+			document.addEventListener("mouseup", releasing, true);
+			window.addEventListener("blur", releasing);
 		}}
 	>
 		{props.compactStyle ? CompactTab(props) : CozyTab(props)}
@@ -2333,7 +2653,12 @@ const TabFolder = (props) => {
 		<div
 			className={
 				"channelTabs-tabFolder" +
-				(selectedTab ? " channelTabs-tabFolderSelected" : "")
+				(selectedTab ? " channelTabs-tabFolderSelected" : "") +
+				(props.folder.collapsed || !props.tabs.length
+					? ""
+					: selectedTab
+						? " channelTabs-tabFolderActive"
+						: " channelTabs-tabFolderOpen")
 			}
 			role="button"
 			tabIndex={0}
@@ -2352,15 +2677,56 @@ const TabFolder = (props) => {
 				}
 			}}
 			onContextMenu={(e) => CreateTabFolderContextMenu(props, e)}
-			onMouseOver={() => {
-				if (currentTabDragIndex !== -1) currentTabDragDestinationIndex = -1;
+			onMouseDown={(e) => {
+				if (e.button !== 0) return;
+				const startX = e.clientX;
+				const startY = e.clientY;
+				const moving = (event) => {
+					if (Math.hypot(event.clientX - startX, event.clientY - startY) < 8)
+						return;
+					currentFolderDrag.current = props.folder.id;
+					currentFolderDrag.target = null;
+					suppressClickUntil.current = Date.now() + 1e3;
+					document.body.classList.add("channelTabs-draggingTab");
+					document.removeEventListener("mousemove", moving);
+				};
+				const releasing = () => {
+					document.removeEventListener("mousemove", moving);
+					document.removeEventListener("mouseup", releasing, true);
+					window.removeEventListener("blur", releasing);
+					const { current, target } = currentFolderDrag;
+					const dragged = current === props.folder.id;
+					endTabDrag();
+					if (!dragged) return;
+					suppressClickUntil.current = Date.now() + 100;
+					if (target) {
+						const { after, ...rest } = target;
+						props.moveFolder(props.folder.id, rest, after);
+					}
+				};
+				document.addEventListener("mousemove", moving);
+				document.addEventListener("mouseup", releasing, true);
+				window.addEventListener("blur", releasing);
 			}}
-			onMouseUpCapture={(e) => {
-				if (e.button !== 0 || currentTabDragIndex === -1) return;
-				e.preventDefault();
-				suppressClickUntil.current = Date.now() + 100;
-				props.moveTabToFolder(currentTabDragIndex, props.folder.id);
-				currentTabDragDestinationIndex = -1;
+			onMouseMove={(e) => {
+				if (currentFolderDrag.current) {
+					if (currentFolderDrag.current === props.folder.id) {
+						currentFolderDrag.target = null;
+						clearTabDropMarker();
+						return;
+					}
+					const rect = e.currentTarget.getBoundingClientRect();
+					const after = e.clientX > rect.left + rect.width / 2;
+					currentFolderDrag.target = {
+						type: "folder",
+						id: props.folder.id,
+						after,
+					};
+					markTabDrop(e.currentTarget, after ? "after" : "before");
+				} else if (currentTabDrag.index !== -1) {
+					currentTabDrag.target = { type: "folder", id: props.folder.id };
+					markTabDrop(e.currentTarget, "into");
+				}
 			}}
 		>
 			<span aria-hidden="true">{props.folder.collapsed ? "▸" : "▾"}</span>
@@ -2464,6 +2830,27 @@ const FavTypingBadge = ({ isTyping, userIds }) => {
 	);
 };
 
+function clearFavDropMarker() {
+	for (const drag of [currentFavDrag, currentGroupDrag]) {
+		drag.marked?.classList.remove(
+			"channelTabs-favDropBefore",
+			"channelTabs-favDropAfter",
+			"channelTabs-favDropVertical",
+		);
+		drag.marked = null;
+	}
+}
+
+function endFavDrag() {
+	clearFavDropMarker();
+	currentFavDrag.fav = null;
+	currentFavDrag.groupId = null;
+	currentFavDrag.target = null;
+	currentGroupDrag.group = null;
+	currentGroupDrag.target = null;
+	document.body.classList.remove("channelTabs-draggingFav");
+}
+
 const Fav = (props) => (
 	<div
 		className={
@@ -2482,6 +2869,7 @@ const Fav = (props) => (
 		data-unread-count={props.unreadCount}
 		data-unread-estimated={props.unreadEstimated}
 		onClick={(e) => {
+			if (Date.now() < suppressFavClickUntil) return;
 			if (
 				process.platform === "darwin" &&
 				props.showTabBar &&
@@ -2508,47 +2896,69 @@ const Fav = (props) => (
 			CreateFavContextMenu(props, e);
 		}}
 		onMouseOver={(e) => {
-			if (currentFavDragIndex == props.favIndex || currentFavDragIndex == -1)
+			const drag = currentFavDrag;
+			const loose = props.groupId === -1;
+			if (currentGroupDrag.group && loose) {
+				// A group being dragged can land beside any loose bookmark.
+				const box = e.currentTarget.getBoundingClientRect();
+				const after = e.clientX > box.left + box.width / 2;
+				currentGroupDrag.target = { type: "fav", item: props.favItem, after };
+				clearFavDropMarker();
+				currentGroupDrag.marked = e.currentTarget;
+				e.currentTarget.classList.add(
+					after ? "channelTabs-favDropAfter" : "channelTabs-favDropBefore",
+				);
 				return;
-			currentFavDragDestinationIndex = props.favIndex;
+			}
+			if (!drag.fav || drag.fav === props.favItem) return;
+			if (drag.groupId !== props.groupId) return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			const vertical = e.currentTarget.parentElement?.classList.contains(
+				"channelTabs-favGroup-content",
+			);
+			const after = vertical
+				? e.clientY > rect.top + rect.height / 2
+				: e.clientX > rect.left + rect.width / 2;
+			drag.target = { type: "fav", item: props.favItem, after };
+			clearFavDropMarker();
+			drag.marked = e.currentTarget;
+			e.currentTarget.classList.add(
+				after ? "channelTabs-favDropAfter" : "channelTabs-favDropBefore",
+			);
+			if (vertical)
+				e.currentTarget.classList.add("channelTabs-favDropVertical");
 		}}
 		onMouseDown={(e) => {
-			let mouseMove = (e2) => {
-				if (
-					Math.sqrt((e.pageX - e2.pageX) ** 2) > 20 ||
-					Math.sqrt((e.pageY - e2.pageY) ** 2) > 20
-				) {
-					currentFavDragIndex = props.favIndex;
-					document.removeEventListener("mousemove", mouseMove);
-					document.removeEventListener("mouseup", mouseUp);
-					let dragging = (e3) => {
-						if (currentFavDragIndex != currentFavDragDestinationIndex) {
-							if (currentFavDragDestinationIndex != -1) {
-								props.moveFav(
-									currentFavDragIndex,
-									currentFavDragDestinationIndex,
-								);
-								currentFavDragDestinationIndex = currentFavDragDestinationIndex;
-								currentFavDragIndex = currentFavDragDestinationIndex;
-							}
-						}
-					};
-					let releasing = (e3) => {
-						document.removeEventListener("mousemove", dragging);
-						document.removeEventListener("mouseup", releasing);
-						currentFavDragIndex = -1;
-						currentFavDragDestinationIndex = -1;
-					};
-					document.addEventListener("mousemove", dragging);
-					document.addEventListener("mouseup", releasing);
+			if (e.button !== 0) return;
+			const startX = e.clientX;
+			const startY = e.clientY;
+			const moving = (event) => {
+				if (Math.hypot(event.clientX - startX, event.clientY - startY) < 8)
+					return;
+				currentFavDrag.fav = props.favItem;
+				currentFavDrag.groupId = props.groupId;
+				currentFavDrag.target = null;
+				suppressFavClickUntil = Date.now() + 1e3;
+				document.body.classList.add("channelTabs-draggingFav");
+				document.removeEventListener("mousemove", moving);
+			};
+			const releasing = () => {
+				document.removeEventListener("mousemove", moving);
+				document.removeEventListener("mouseup", releasing, true);
+				window.removeEventListener("blur", releasing);
+				const { fav, target } = currentFavDrag;
+				const dragged = fav === props.favItem;
+				endFavDrag();
+				if (dragged) {
+					suppressFavClickUntil = Date.now() + 100;
+					if (target && props.groupId === -1)
+						props.moveRowItem({ type: "fav", item: fav }, target);
+					else if (target) props.moveFavTo(fav, target.item, target.after);
 				}
 			};
-			let mouseUp = (_) => {
-				document.removeEventListener("mousemove", mouseMove);
-				document.removeEventListener("mouseup", mouseUp);
-			};
-			document.addEventListener("mousemove", mouseMove);
-			document.addEventListener("mouseup", mouseUp);
+			document.addEventListener("mousemove", moving);
+			document.addEventListener("mouseup", releasing, true);
+			window.addEventListener("blur", releasing);
 		}}
 	>
 		<svg
@@ -2644,6 +3054,69 @@ const NewTabFolder = (props) => (
 	</div>
 );
 
+function CreateSavedFoldersMenu(props, e) {
+	const tabCount = (folder) =>
+		folder.tabs.length === 1 ? "1 tab" : `${folder.tabs.length} tabs`;
+	ContextMenu.open(
+		e,
+		ContextMenu.buildMenu([
+			{
+				type: "group",
+				items: props.closedFolders.map((folder) => ({
+					label: folder.name,
+					subtext: tabCount(folder),
+					action: () => props.reopenFolder(folder.id),
+				})),
+			},
+			{
+				type: "group",
+				items: [
+					{
+						label: "Forget saved folder",
+						color: "danger",
+						type: "submenu",
+						items: props.closedFolders.map((folder) => ({
+							label: folder.name,
+							subtext: tabCount(folder),
+							color: "danger",
+							action: () => props.forgetFolder(folder.id),
+						})),
+					},
+				],
+			},
+		]),
+		{ position: "bottom", align: "left" },
+	);
+}
+
+const SavedTabFolders = (props) =>
+	props.closedFolders.length ? (
+		<div
+			className="channelTabs-savedFolders"
+			role="button"
+			tabIndex={0}
+			title="Saved folders"
+			aria-label={`Saved folders, ${props.closedFolders.length}`}
+			onClick={(e) => CreateSavedFoldersMenu(props, e)}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					CreateSavedFoldersMenu(props, e);
+				}
+			}}
+		>
+			<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+				<path
+					fill="currentColor"
+					d="M10 4 12 6h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6Zm-3 7v2h10v-2H7Zm0 4v2h7v-2H7Z"
+				/>
+			</svg>
+			<span className="channelTabs-savedFoldersCount">
+				{props.closedFolders.length}
+			</span>
+		</div>
+	) : null;
+
 const TabListDropdown = (props) => (
 	<div
 		className="channelTabs-tabListDropdown"
@@ -2667,6 +3140,7 @@ const NoFavItemsPlaceholder = (props) => (
 
 const FavItems = (props) => {
 	var isDefault = props.group === null;
+	var looseOrdinal = -1;
 
 	return props.favs
 		.filter((item) => item)
@@ -2674,6 +3148,15 @@ const FavItems = (props) => {
 			var canCreate = isDefault
 				? fav.groupId === -1
 				: fav.groupId === props.group.groupId;
+			// `range` limits the loose bookmarks drawn to one stretch of the row.
+			if (isDefault && canCreate) {
+				looseOrdinal++;
+				if (
+					props.range &&
+					(looseOrdinal < props.range[0] || looseOrdinal >= props.range[1])
+				)
+					canCreate = false;
+			}
 			return canCreate
 				? React.createElement(
 						Flux.connectStores(
@@ -2701,6 +3184,9 @@ const FavItems = (props) => {
 								minimized={fav.minimized}
 								moveToFavGroup={props.moveToFavGroup}
 								moveFav={props.move}
+								moveFavTo={props.moveTo}
+								moveRowItem={props.moveRowItem}
+								favItem={fav}
 								favIndex={favIndex}
 								channelId={fav.channelId}
 								guildId={fav.guildId}
@@ -2721,6 +3207,21 @@ const FavItems = (props) => {
 		});
 };
 
+const FolderIcon = () => (
+	<svg
+		className="channelTabs-favGroupIcon"
+		aria-hidden="true"
+		width="16"
+		height="16"
+		viewBox="0 0 24 24"
+	>
+		<path
+			fill="currentColor"
+			d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z"
+		/>
+	</svg>
+);
+
 const FavFolder = (props) => (
 	<div
 		className="channelTabs-favGroup"
@@ -2728,64 +3229,72 @@ const FavFolder = (props) => (
 			CreateFavGroupContextMenu(props, e);
 		}}
 		onMouseOver={(e) => {
-			if (
-				currentGroupDragIndex == props.groupIndex ||
-				currentGroupDragIndex == -1
-			)
-				return;
-			currentGroupDragDestinationIndex = props.groupIndex;
+			// A group or a loose bookmark being dragged can land beside this group.
+			const drag = currentGroupDrag.group
+				? currentGroupDrag
+				: currentFavDrag.fav && currentFavDrag.groupId === -1
+					? currentFavDrag
+					: null;
+			if (!drag || drag.group === props.favGroup) return;
+			if (e.target.closest?.(".channelTabs-favGroup-content")) return;
+			const rect = e.currentTarget.getBoundingClientRect();
+			const after = e.clientX > rect.left + rect.width / 2;
+			drag.target = { type: "group", item: props.favGroup, after };
+			clearFavDropMarker();
+			drag.marked = e.currentTarget;
+			e.currentTarget.classList.add(
+				after ? "channelTabs-favDropAfter" : "channelTabs-favDropBefore",
+			);
 		}}
 		onMouseDown={(e) => {
-			let mouseMove = (e2) => {
-				if (
-					Math.sqrt((e.pageX - e2.pageX) ** 2) > 20 ||
-					Math.sqrt((e.pageY - e2.pageY) ** 2) > 20
-				) {
-					currentGroupDragIndex = props.groupIndex;
-					document.removeEventListener("mousemove", mouseMove);
-					document.removeEventListener("mouseup", mouseUp);
-					let dragging = (e3) => {
-						if (currentGroupDragIndex != currentGroupDragDestinationIndex) {
-							if (currentGroupDragDestinationIndex != -1) {
-								props.moveFavGroup(
-									currentGroupDragIndex,
-									currentGroupDragDestinationIndex,
-								);
-								currentGroupDragDestinationIndex =
-									currentGroupDragDestinationIndex;
-								currentGroupDragIndex = currentGroupDragDestinationIndex;
-							}
-						}
-					};
-					let releasing = (e3) => {
-						document.removeEventListener("mousemove", dragging);
-						document.removeEventListener("mouseup", releasing);
-						currentGroupDragIndex = -1;
-						currentGroupDragDestinationIndex = -1;
-					};
-					document.addEventListener("mousemove", dragging);
-					document.addEventListener("mouseup", releasing);
+			// Only the group's label starts a drag; presses inside its open list belong to the bookmarks.
+			if (e.button !== 0 || !e.target.closest?.(".channelTabs-favGroupBtn"))
+				return;
+			const startX = e.clientX;
+			const startY = e.clientY;
+			const moving = (event) => {
+				if (Math.hypot(event.clientX - startX, event.clientY - startY) < 8)
+					return;
+				closeAllDropdowns();
+				currentGroupDrag.group = props.favGroup;
+				currentGroupDrag.target = null;
+				suppressFavClickUntil = Date.now() + 1e3;
+				document.body.classList.add("channelTabs-draggingFav");
+				document.removeEventListener("mousemove", moving);
+			};
+			const releasing = () => {
+				document.removeEventListener("mousemove", moving);
+				document.removeEventListener("mouseup", releasing, true);
+				window.removeEventListener("blur", releasing);
+				const { group, target } = currentGroupDrag;
+				const dragged = group === props.favGroup;
+				endFavDrag();
+				if (dragged) {
+					suppressFavClickUntil = Date.now() + 100;
+					if (target) props.moveRowItem({ type: "group", item: group }, target);
 				}
 			};
-			let mouseUp = (_) => {
-				document.removeEventListener("mousemove", mouseMove);
-				document.removeEventListener("mouseup", mouseUp);
-			};
-			document.addEventListener("mousemove", mouseMove);
-			document.addEventListener("mouseup", mouseUp);
+			document.addEventListener("mousemove", moving);
+			document.addEventListener("mouseup", releasing, true);
+			window.addEventListener("blur", releasing);
 		}}
 	>
 		<div
 			className="channelTabs-favGroupBtn"
 			onClick={() => {
+				if (Date.now() < suppressFavClickUntil) return;
+				const content = document.getElementById(
+					"favGroup-content-" + props.groupIndex,
+				);
+				const wasOpen = content?.classList.contains("channelTabs-favGroupShow");
 				closeAllDropdowns();
-				document
-					.getElementById("favGroup-content-" + props.groupIndex)
-					.classList.toggle("channelTabs-favGroupShow");
+				if (!content || wasOpen) return;
+				content.classList.add("channelTabs-favGroupShow");
 				currentGroupOpened = props.groupIndex;
 			}}
 		>
-			{props.favGroup.name}
+			<FolderIcon />
+			<span className="channelTabs-favGroupName">{props.favGroup.name}</span>
 			{props.showFavGroupMentionBadges ? (
 				props.mentionCountGroup == 0 &&
 				!props.showEmptyFavGroupBadges ? null : (
@@ -2821,6 +3330,7 @@ const FavFolder = (props) => (
 
 const FavFolders = (props) => {
 	return props.favGroups.map((favGroup, index) => {
+		if (props.only && props.only !== favGroup) return null;
 		return React.createElement(
 			Flux.connectStores(
 				[UnreadStateStore, SelectedChannelStore, UserTypingStore],
@@ -2968,8 +3478,16 @@ function HorizontalScroll(props) {
 	);
 }
 
+function stopTitleBarDoubleClick(node) {
+	node?.addEventListener("dblclick", (e) => e.stopPropagation());
+}
+
 const TabBar = (props) => (
-	<div className="channelTabs-tabContainer" data-tab-count={props.tabs.length}>
+	<div
+		className="channelTabs-tabContainer"
+		data-tab-count={props.tabs.length}
+		ref={stopTitleBarDoubleClick}
+	>
 		<div className="channelTabs-tabNav">
 			<div
 				className="channelTabs-tabNavLeft"
@@ -3028,7 +3546,9 @@ const TabBar = (props) => (
 						toggleFolder={props.toggleFolder}
 						renameFolder={props.renameFolder}
 						deleteFolder={props.deleteFolder}
+						closeFolder={props.closeFolder}
 						moveTabToFolder={props.moveTabToFolder}
+						moveFolder={props.moveFolder}
 					/>
 				) : (
 					React.createElement(
@@ -3070,12 +3590,27 @@ const TabBar = (props) => (
 								}
 								openInNewTab={() => props.openInNewTab(item.tab)}
 								moveTab={props.move}
+								moveTabTo={props.moveTabTo}
+								moveTabToFolder={props.moveTabToFolder}
 								moveToFolder={(folderId) =>
 									props.moveTabToFolder(item.tabIndex, folderId)
 								}
 								createFolderForTab={() => props.createFolder(item.tabIndex)}
 								tabFolders={props.tabFolders}
 								folderId={item.tab.folderId}
+								inActiveFolder={
+									Boolean(item.tab.folderId) &&
+									props.tabs.some(
+										(tab) =>
+											tab.folderId === item.tab.folderId && tab.selected,
+									)
+								}
+								folderEnd={
+									Boolean(item.tab.folderId) &&
+									props.tabs.findLastIndex(
+										(tab) => tab.folderId === item.tab.folderId,
+									) === item.tabIndex
+								}
 								tabCount={props.tabs.length}
 								tabIndex={item.tabIndex}
 								name={item.tab.name}
@@ -3107,10 +3642,31 @@ const TabBar = (props) => (
 		</HorizontalScroll>
 		<NewTab openNewTab={props.openNewTab} />
 		<NewTabFolder createFolder={() => props.createFolder()} />
+		<SavedTabFolders
+			closedFolders={props.closedFolders}
+			reopenFolder={props.reopenFolder}
+			forgetFolder={props.forgetFolder}
+		/>
 		<TabListDropdown {...props} />
 		{props.trailing}
 	</div>
 );
+
+function getFavRowSegments(favs, favGroups) {
+	const segments = [];
+	let ordinal = 0;
+	for (const { type, item } of getFavRowItems(favs, favGroups)) {
+		if (type === "group") {
+			segments.push({ type, group: item });
+			continue;
+		}
+		const last = segments.at(-1);
+		if (last?.type === "favs") last.range[1] = ordinal + 1;
+		else segments.push({ type: "favs", range: [ordinal, ordinal + 1] });
+		ordinal++;
+	}
+	return segments;
+}
 
 const FavBar = (props) => (
 	<div
@@ -3119,13 +3675,23 @@ const FavBar = (props) => (
 			(props.favs.length == 0 ? " channelTabs-noFavs" : "")
 		}
 		data-fav-count={props.favs.length}
+		ref={stopTitleBarDoubleClick}
 		onContextMenu={(e) => {
 			CreateFavBarContextMenu(props, e);
 		}}
 	>
-		<FavFolders {...props} />
 		{props.favs.length > 0 ? (
-			<FavItems group={null} {...props} />
+			getFavRowSegments(props.favs, props.favGroups).map((segment) =>
+				segment.type === "group" ? (
+					<React.Fragment key={`group-${segment.group.groupId}`}>
+						<FavFolders {...props} only={segment.group} />
+					</React.Fragment>
+				) : (
+					<React.Fragment key={`favs-${segment.range[0]}`}>
+						<FavItems group={null} {...props} range={segment.range} />
+					</React.Fragment>
+				),
+			)
 		) : (
 			<NoFavItemsPlaceholder />
 		)}
@@ -3148,6 +3714,7 @@ const TopBar = class TopBar extends React.Component {
 			),
 			tabs: props.tabs,
 			tabFolders: props.tabFolders,
+			closedTabFolders: props.closedTabFolders,
 			favs: props.favs,
 			favGroups: props.favGroups,
 			reopenLastChannel: props.reopenLastChannel,
@@ -3186,17 +3753,24 @@ const TopBar = class TopBar extends React.Component {
 		this.minimizeTab = this.minimizeTab.bind(this);
 		this.minimizeFav = this.minimizeFav.bind(this);
 		this.moveTab = this.moveTab.bind(this);
+		this.moveTabTo = this.moveTabTo.bind(this);
 		this.moveTabToFolder = this.moveTabToFolder.bind(this);
+		this.moveTabFolder = this.moveTabFolder.bind(this);
 		this.createTabFolder = this.createTabFolder.bind(this);
 		this.renameTabFolder = this.renameTabFolder.bind(this);
 		this.toggleTabFolder = this.toggleTabFolder.bind(this);
 		this.deleteTabFolder = this.deleteTabFolder.bind(this);
+		this.closeTabFolder = this.closeTabFolder.bind(this);
+		this.reopenTabFolder = this.reopenTabFolder.bind(this);
+		this.forgetTabFolder = this.forgetTabFolder.bind(this);
 		this.moveFav = this.moveFav.bind(this);
+		this.moveFavTo = this.moveFavTo.bind(this);
 		this.addFavGroup = this.addFavGroup.bind(this);
 		this.moveToFavGroup = this.moveToFavGroup.bind(this);
 		this.renameFavGroup = this.renameFavGroup.bind(this);
 		this.removeFavGroup = this.removeFavGroup.bind(this);
 		this.moveFavGroup = this.moveFavGroup.bind(this);
+		this.moveFavRowItem = this.moveFavRowItem.bind(this);
 		this.openNewTab = this.openNewTab.bind(this);
 		this.openTabInNewTab = this.openTabInNewTab.bind(this);
 		this.openFavInNewTab = this.openFavInNewTab.bind(this);
@@ -3227,6 +3801,8 @@ const TopBar = class TopBar extends React.Component {
 	}
 
 	switchToTab(tabIndex) {
+		const rememberScroll = this.props.plugin.settings.rememberScroll !== false;
+		if (rememberScroll) captureTabScroll(this.state.tabs);
 		const folderId = this.state.tabs[tabIndex]?.folderId;
 		this.setState(
 			{
@@ -3252,6 +3828,7 @@ const TopBar = class TopBar extends React.Component {
 		switching = true;
 		NavigationUtils.transitionTo(this.state.tabs[tabIndex].url);
 		switching = false;
+		if (rememberScroll) restoreTabScroll(this.state.tabs[tabIndex]);
 	}
 
 	closeTab(tabIndex, mode) {
@@ -3327,6 +3904,43 @@ const TopBar = class TopBar extends React.Component {
 			{
 				tabs,
 				selectedTabIndex: tabs.findIndex((tab) => tab.selected),
+			},
+			this.props.plugin.saveSettings,
+		);
+	}
+
+	// Drop a dragged tab before or after another tab, joining that tab's folder.
+	moveTabTo(fromIndex, targetIndex, after) {
+		const moving = this.state.tabs[fromIndex];
+		const target = this.state.tabs[targetIndex];
+		if (!moving || !target || fromIndex === targetIndex) return;
+		const folderId = target.folderId ?? null;
+		const tabs = this.state.tabs.filter((tab, index) => index !== fromIndex);
+		const toIndex = tabs.indexOf(target) + (after ? 1 : 0);
+		tabs.splice(toIndex, 0, { ...moving, folderId });
+		this.setState(
+			{
+				tabs,
+				selectedTabIndex: tabs.findIndex((tab) => tab.selected),
+			},
+			this.props.plugin.saveSettings,
+		);
+	}
+
+	moveTabFolder(folderId, target, after) {
+		const result = moveFolderGroup(
+			this.state.tabs,
+			this.state.tabFolders,
+			folderId,
+			target,
+			after,
+		);
+		if (result.tabs === this.state.tabs) return;
+		this.setState(
+			{
+				tabs: result.tabs,
+				tabFolders: result.folders,
+				selectedTabIndex: result.tabs.findIndex((tab) => tab.selected),
 			},
 			this.props.plugin.saveSettings,
 		);
@@ -3430,6 +4044,100 @@ const TopBar = class TopBar extends React.Component {
 		);
 	}
 
+	// Closing a folder takes it and its tabs off the tab row and keeps them in
+	// closedTabFolders, so reopening brings back the same tabs.
+	closeTabFolder(folderId) {
+		const folder = this.state.tabFolders.find((item) => item.id === folderId);
+		if (!folder) return;
+		const selected = this.state.tabs.find((tab) => tab.selected);
+		if (
+			selected?.folderId === folderId &&
+			this.props.plugin.settings.rememberScroll !== false
+		)
+			captureTabScroll(this.state.tabs);
+		const firstIndex = this.state.tabs.findIndex(
+			(tab) => tab.folderId === folderId,
+		);
+		const saved = this.state.tabs
+			.filter((tab) => tab.folderId === folderId)
+			.map((tab) => ({ ...tab, selected: false }));
+		let tabs = this.state.tabs.filter((tab) => tab.folderId !== folderId);
+		if (!tabs.length)
+			tabs = [
+				{
+					url: "/channels/@me",
+					name: "Friends",
+					selected: false,
+					channelId: undefined,
+					folderId: null,
+				},
+			];
+		const lostSelection = !tabs.some((tab) => tab.selected);
+		// Land on the tab that sat after the folder, or the one before it.
+		const nextIndex = lostSelection
+			? Math.min(firstIndex === -1 ? 0 : firstIndex, tabs.length - 1)
+			: tabs.findIndex((tab) => tab.selected);
+		const { position, collapsed, ...rest } = folder;
+		this.setState(
+			(state) => ({
+				tabs,
+				selectedTabIndex: nextIndex,
+				tabFolders: state.tabFolders.filter((item) => item.id !== folderId),
+				closedTabFolders: [
+					...state.closedTabFolders.filter((item) => item.id !== folderId),
+					{ ...rest, tabs: saved },
+				],
+			}),
+			() => {
+				if (lostSelection) this.switchToTab(nextIndex);
+				else this.props.plugin.saveSettings();
+			},
+		);
+	}
+
+	reopenTabFolder(folderId) {
+		const closed = this.state.closedTabFolders.find(
+			(item) => item.id === folderId,
+		);
+		if (!closed) return;
+		const { tabs: savedTabs, ...folder } = closed;
+		const firstIndex = this.state.tabs.length;
+		this.setState(
+			(state) => ({
+				tabs: [
+					...state.tabs,
+					...savedTabs.map((tab) => ({ ...tab, selected: false, folderId })),
+				],
+				tabFolders: [
+					...state.tabFolders,
+					{
+						...folder,
+						collapsed: false,
+						position: savedTabs.length ? null : state.tabs.length,
+					},
+				],
+				closedTabFolders: state.closedTabFolders.filter(
+					(item) => item.id !== folderId,
+				),
+			}),
+			() => {
+				if (savedTabs.length) this.switchToTab(firstIndex);
+				else this.props.plugin.saveSettings();
+			},
+		);
+	}
+
+	forgetTabFolder(folderId) {
+		this.setState(
+			(state) => ({
+				closedTabFolders: state.closedTabFolders.filter(
+					(item) => item.id !== folderId,
+				),
+			}),
+			this.props.plugin.saveSettings,
+		);
+	}
+
 	//#endregion
 
 	//#region Fav Functions
@@ -3511,6 +4219,15 @@ const TopBar = class TopBar extends React.Component {
 		if (fromIndex === toIndex) return;
 		const favs = this.state.favs.filter((fav, index) => index !== fromIndex);
 		favs.splice(toIndex, 0, this.state.favs[fromIndex]);
+		this.setState({ favs }, this.props.plugin.saveSettings);
+	}
+
+	moveFavTo(fav, targetFav, after) {
+		if (fav === targetFav) return;
+		const favs = this.state.favs.filter((item) => item !== fav);
+		const index = favs.indexOf(targetFav);
+		if (index < 0 || !this.state.favs.includes(fav)) return;
+		favs.splice(index + (after ? 1 : 0), 0, fav);
 		this.setState({ favs }, this.props.plugin.saveSettings);
 	}
 
@@ -3619,13 +4336,48 @@ const TopBar = class TopBar extends React.Component {
 		);
 	}
 
+	// Moves a loose bookmark or a group beside another one in the bookmark row.
+	moveFavRowItem(dragged, target) {
+		const items = getFavRowItems(this.state.favs, this.state.favGroups);
+		const find = (entry) =>
+			items.findIndex((x) => x.type === entry.type && x.item === entry.item);
+		const from = find(dragged);
+		if (from < 0 || find(target) < 0 || find(dragged) === find(target)) return;
+		const [moved] = items.splice(from, 1);
+		items.splice(find(target) + (target.after ? 1 : 0), 0, moved);
+
+		let looseCount = 0;
+		const loose = [];
+		const favGroups = [];
+		for (const { type, item } of items) {
+			if (type === "fav") {
+				loose.push(item);
+				looseCount++;
+			} else favGroups.push({ ...item, position: looseCount });
+		}
+		let next = 0;
+		const favs = this.state.favs.map((fav) =>
+			fav && fav.groupId === -1 ? loose[next++] : fav,
+		);
+		this.setState({ favs, favGroups }, this.props.plugin.saveSettings);
+	}
+
+	// Context-menu move left/right: step over the neighboring group as laid out in the row.
 	moveFavGroup(fromIndex, toIndex) {
 		if (fromIndex === toIndex) return;
-		const favGroups = this.state.favGroups.filter(
-			(group, index) => index !== fromIndex,
+		const group = this.state.favGroups[fromIndex];
+		const groups = getFavRowItems(this.state.favs, this.state.favGroups).filter(
+			(entry) => entry.type === "group",
 		);
-		favGroups.splice(toIndex, 0, this.state.favGroups[fromIndex]);
-		this.setState({ favGroups: favGroups }, this.props.plugin.saveSettings);
+		const row = groups.findIndex((entry) => entry.item === group);
+		if (row < 0) return;
+		const forward = toIndex > fromIndex;
+		const target =
+			groups[(row + (forward ? 1 : -1) + groups.length) % groups.length];
+		this.moveFavRowItem(
+			{ type: "group", item: group },
+			{ type: "group", item: target.item, after: forward },
+		);
 	}
 
 	//#endregion
@@ -3709,7 +4461,10 @@ const TopBar = class TopBar extends React.Component {
 		//Used to Duplicate Tabs
 		this.setState(
 			{
-				tabs: [...this.state.tabs, { ...tab, selected: false, folderId: null }],
+				tabs: [
+					...this.state.tabs,
+					{ ...tab, selected: false, folderId: null, id: undefined },
+				],
 			},
 			this.props.plugin.saveSettings,
 		);
@@ -3799,11 +4554,17 @@ const TopBar = class TopBar extends React.Component {
 						addToFavs={this.addToFavs}
 						minimizeTab={this.minimizeTab}
 						move={this.moveTab}
+						moveTabTo={this.moveTabTo}
 						moveTabToFolder={this.moveTabToFolder}
+						moveFolder={this.moveTabFolder}
 						createFolder={this.createTabFolder}
 						renameFolder={this.renameTabFolder}
 						toggleFolder={this.toggleTabFolder}
 						deleteFolder={this.deleteTabFolder}
+						closeFolder={this.closeTabFolder}
+						reopenFolder={this.reopenTabFolder}
+						forgetFolder={this.forgetTabFolder}
+						closedFolders={this.state.closedTabFolders}
 						tabRefs={this.tabRefs}
 					/>
 				)}
@@ -3833,7 +4594,9 @@ const TopBar = class TopBar extends React.Component {
 						minimizeFav={this.minimizeFav}
 						openInNewTab={this.openFavInNewTab}
 						move={this.moveFav}
+						moveTo={this.moveFavTo}
 						moveFavGroup={this.moveFavGroup}
+						moveRowItem={this.moveFavRowItem}
 						addFavGroup={this.addFavGroup}
 						moveToFavGroup={this.moveToFavGroup}
 						removeFavGroup={this.removeFavGroup}
@@ -3903,11 +4666,21 @@ module.exports = class ChannelTabs {
 		this.keybindHandler = this.keybindHandler.bind(this);
 		this.numberedTabKeybindHandler = this.numberedTabKeybindHandler.bind(this);
 		this.commandClickHandler = this.commandClickHandler.bind(this);
+		this.scrollHandler = this.scrollHandler.bind(this);
+		this.dropdownDismissHandler = this.dropdownDismissHandler.bind(this);
 		this.onSwitch();
 		this.patchTitleBar(this.promises.state);
 		this.patchContextMenus();
 		this.ifReopenLastChannelDefault();
 		this.tabApi = {
+			// A stable id for the selected tab, so other plugins can keep per-tab state.
+			getActiveTabId: () => {
+				const tab = TopBarRef.current?.state.tabs.find((item) => item.selected);
+				if (!tab) return null;
+				tab.id ??=
+					Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+				return tab.id;
+			},
 			openChannelInTab: (guildId, channelId, name) => {
 				if (!this.settings.showTabBar || !TopBarRef.current) return false;
 				TopBarRef.current.saveChannel(guildId, channelId, name);
@@ -3918,7 +4691,11 @@ module.exports = class ChannelTabs {
 		window.addEventListener("keydown", this.numberedTabKeybindHandler, true);
 		document.addEventListener("keydown", this.keybindHandler);
 		document.addEventListener("click", this.commandClickHandler, true);
-		window.onclick = (event) => this.clickHandler(event);
+		document.addEventListener("scroll", this.scrollHandler, true);
+		window.addEventListener("click", this.dropdownDismissHandler, true);
+		window.addEventListener("mousedown", this.dropdownDismissHandler, true);
+		window.addEventListener("keydown", this.dropdownDismissHandler, true);
+		window.addEventListener("blur", closeAllDropdowns);
 		this.showChangelog();
 	}
 
@@ -3929,10 +4706,33 @@ module.exports = class ChannelTabs {
 		window.removeEventListener("keydown", this.numberedTabKeybindHandler, true);
 		document.removeEventListener("keydown", this.keybindHandler);
 		document.removeEventListener("click", this.commandClickHandler, true);
-		window.onclick = null;
+		document.removeEventListener("scroll", this.scrollHandler, true);
+		clearTimeout(this.scrollTimer);
+		if (this.scrollSaveTimer) {
+			clearTimeout(this.scrollSaveTimer);
+			this.saveSettings();
+		}
+		scrollRestoreToken++;
+		window.removeEventListener("click", this.dropdownDismissHandler, true);
+		window.removeEventListener("mousedown", this.dropdownDismissHandler, true);
+		window.removeEventListener("keydown", this.dropdownDismissHandler, true);
+		window.removeEventListener("blur", closeAllDropdowns);
+		closeAllDropdowns();
+		endFavDrag();
 		Patcher.unpatchAll();
 		this.promises.cancel();
 		patches.forEach((patch) => patch());
+	}
+
+	scrollHandler() {
+		if (this.settings.rememberScroll === false) return;
+		clearTimeout(this.scrollTimer);
+		this.scrollTimer = setTimeout(() => {
+			if (captureTabScroll(TopBarRef.current?.state.tabs)) {
+				clearTimeout(this.scrollSaveTimer);
+				this.scrollSaveTimer = setTimeout(this.saveSettings, 1000);
+			}
+		}, 250);
 	}
 
 	showChangelog() {
@@ -4012,6 +4812,10 @@ module.exports = class ChannelTabs {
 		const PrivacyStyle = `
 	#app-mount .channelTabs-favGroupBtn {
 		color: transparent !important;
+	}
+
+	#app-mount .channelTabs-favGroupIcon {
+		color: var(--interactive-text-default);
 	}
 
 	#app-mount .channelTabs-tabName {
@@ -4130,7 +4934,7 @@ module.exports = class ChannelTabs {
 		flex: 0 0 auto;
 	}
 
-	.channelTabs-tabContainer > div:not(.channelTabs-tabNav):not(.channelTabs-newTab):not(.channelTabs-newTabFolder):not(.channelTabs-tabListDropdown):not(.channelTabs-trailing) {
+	.channelTabs-tabContainer > div:not(.channelTabs-tabNav):not(.channelTabs-newTab):not(.channelTabs-newTabFolder):not(.channelTabs-savedFolders):not(.channelTabs-tabListDropdown):not(.channelTabs-trailing) {
 		min-width: 0;
 		flex: 1 1 auto;
 	}
@@ -4197,7 +5001,6 @@ ${noDragClasses.map((x) => `.${x}`).join(", ")}, [role="menu"] {
 
 #channelTabs-container>:not(#channelTabs-settingsMenu)+div {
 	padding-top: 4px;
-	border-top: 1px solid var(--border-normal);
 }
 
 .channelTabs-tab {
@@ -4219,11 +5022,10 @@ ${noDragClasses.map((x) => `.${x}`).join(", ")}, [role="menu"] {
 	flex: 0 0 auto;
 	max-width: 180px;
 	height: var(--channelTabs-tabHeight);
+	box-sizing: border-box;
 	padding: 0 9px;
 	margin: 0 3px 3px 3px;
-	border: 1px solid var(--border-normal);
-	border-radius: 5px;
-	background: var(--background-secondary);
+	border-radius: 4px;
 	color: var(--interactive-text-default);
 	cursor: pointer;
 	user-select: none;
@@ -4236,8 +5038,48 @@ ${noDragClasses.map((x) => `.${x}`).join(", ")}, [role="menu"] {
 }
 
 .channelTabs-tabFolderSelected {
-	border-color: var(--brand-experiment);
 	color: var(--interactive-text-active);
+}
+
+/* Open folders draw a line along the bottom of the folder label and its
+   tabs. The folder holding the current tab gets a stronger U: the same line
+   plus the label's left edge and the last tab's right edge. Labels and tabs
+   use border-box at the tab height so the bottom lines sit level. */
+.channelTabs-tabFolder.channelTabs-tabFolderOpen,
+.channelTabs-tabFolder.channelTabs-tabFolderActive {
+	margin-right: 0;
+	border-radius: 4px 4px 0 0;
+	border-bottom: 1px solid var(--channelTabs-folderLine);
+}
+
+.channelTabs-tab.channelTabs-inFolder {
+	box-sizing: border-box;
+	border-bottom: 1px solid var(--channelTabs-folderLine);
+	border-radius: 4px 4px 0 0;
+}
+
+.channelTabs-tab.channelTabs-inFolder.channelTabs-folderEnd {
+	margin-right: 3px;
+}
+
+.channelTabs-tabFolderOpen,
+.channelTabs-inFolder {
+	--channelTabs-folderLine: var(--border-normal);
+}
+
+.channelTabs-tabFolderActive,
+.channelTabs-inActiveFolder {
+	--channelTabs-folderLine: var(--text-muted);
+}
+
+.channelTabs-tabFolder.channelTabs-tabFolderActive {
+	border-left: 1px solid var(--channelTabs-folderLine);
+	border-radius: 0 0 0 4px;
+}
+
+.channelTabs-tab.channelTabs-inActiveFolder.channelTabs-folderEnd {
+	border-right: 1px solid var(--channelTabs-folderLine);
+	border-radius: 4px 0 4px 0;
 }
 
 .channelTabs-tabFolderName {
@@ -4403,7 +5245,8 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 }
 
 .channelTabs-newTab,
-.channelTabs-newTabFolder {
+.channelTabs-newTabFolder,
+.channelTabs-savedFolders {
 	display:flex;
 	align-items: center;
 	justify-content: center;
@@ -4418,15 +5261,29 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 }
 
 .channelTabs-newTab:hover,
-.channelTabs-newTabFolder:hover {
+.channelTabs-newTabFolder:hover,
+.channelTabs-savedFolders:hover {
 	background: var(--interactive-background-hover);
 	color: var(--interactive-text-hover);
 }
 
 .channelTabs-newTab:active,
-.channelTabs-newTabFolder:active {
+.channelTabs-newTabFolder:active,
+.channelTabs-savedFolders:active {
 	background: var(--interactive-background-active);
 	color: var(--interactive-text-active);
+}
+
+.channelTabs-savedFolders {
+	width: auto;
+	gap: 3px;
+	padding: 0 4px;
+	margin-left: 0;
+}
+
+.channelTabs-savedFoldersCount {
+	font-size: 11px;
+	color: var(--text-muted);
 }
 
 .channelTabs-closeTab:hover {
@@ -4623,6 +5480,47 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 	background: var(--interactive-background-hover);
 }
 
+.channelTabs-tabDropBefore {
+	box-shadow: inset 2px 0 0 var(--brand-500, #5865f2);
+}
+
+.channelTabs-tabDropAfter {
+	box-shadow: inset -2px 0 0 var(--brand-500, #5865f2);
+}
+
+.channelTabs-tabDropInto {
+	box-shadow: inset 0 0 0 1px var(--brand-500, #5865f2);
+	background: var(--interactive-background-hover);
+}
+
+/* Keep the tab row's window-drag area from swallowing the drop. */
+body.channelTabs-draggingTab .channelTabs-tabContainer {
+	-webkit-app-region: no-drag;
+}
+
+/* Window-drag regions swallow mouse events, so let the bookmark row receive
+   every click while a group is open or a bookmark is being dragged. */
+.channelTabs-favContainer:has(.channelTabs-favGroupShow),
+body.channelTabs-draggingFav .channelTabs-favContainer {
+	-webkit-app-region: no-drag;
+}
+
+.channelTabs-favDropBefore {
+	box-shadow: inset 2px 0 0 var(--brand-500, #5865f2);
+}
+
+.channelTabs-favDropAfter {
+	box-shadow: inset -2px 0 0 var(--brand-500, #5865f2);
+}
+
+.channelTabs-favDropBefore.channelTabs-favDropVertical {
+	box-shadow: inset 0 2px 0 var(--brand-500, #5865f2);
+}
+
+.channelTabs-favDropAfter.channelTabs-favDropVertical {
+	box-shadow: inset 0 -2px 0 var(--brand-500, #5865f2);
+}
+
 .channelTabs-fav:active {
 	background: var(--interactive-background-active);
 }
@@ -4684,6 +5582,17 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 
 .channelTabs-favGroupBtn>:first-child {
 	margin-left: 6px;
+}
+
+.channelTabs-favGroupBtn > .channelTabs-favGroupIcon {
+	flex: none;
+	margin: 0 6px 0 0;
+	opacity: 0.8;
+}
+
+.channelTabs-favGroupName {
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .channelTabs-favGroup:hover .channelTabs-favGroupBtn {
@@ -4845,6 +5754,7 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 					useStandardNav={this.settings.useStandardNav}
 					tabs={this.settings.tabs}
 					tabFolders={this.settings.tabFolders ?? []}
+					closedTabFolders={this.settings.closedTabFolders ?? []}
 					favs={this.settings.favs}
 					favGroups={this.settings.favGroups}
 					ref={TopBarRef}
@@ -4933,10 +5843,23 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 
 	//#region Handlers
 
-	clickHandler(e) {
-		if (!e.target.matches(".channelTabs-favGroupBtn")) {
-			closeAllDropdowns();
+	// Closes an open bookmark group when you click, press, or hit Escape outside it.
+	// A press inside the open list is left alone so its bookmarks stay clickable;
+	// the click that follows closes the list unless it landed on the group button,
+	// which toggles itself.
+	dropdownDismissHandler(e) {
+		if (e.type === "keydown") {
+			if (e.key === "Escape") closeAllDropdowns();
+			return;
 		}
+		// A click that ends a bookmark drag shouldn't close the list it was dragged in.
+		if (e.type === "click" && Date.now() < suppressFavClickUntil) return;
+		const inside =
+			e.type === "mousedown"
+				? ".channelTabs-favGroup"
+				: ".channelTabs-favGroupBtn";
+		if (!(e.target instanceof Element) || !e.target.closest(inside))
+			closeAllDropdowns();
 	}
 
 	commandClickHandler(e) {
@@ -4963,22 +5886,35 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 			return;
 		}
 
+		// Sidebar rows (channels, threads, DMs) are matched by their link, or by the
+		// list item id for rows that aren't a link, such as threads under a channel.
 		const link = e.target.closest("a[href]");
-		if (
-			!link ||
-			!link.closest('[aria-label="Channels"], [aria-label="Direct Messages"]')
-		)
-			return;
+		let guildId;
+		let channelId;
+		let path;
+		if (link?.closest(SIDEBAR_LIST_SELECTOR)) {
+			const url = new URL(link.href, location.href);
+			if (url.origin !== location.origin) return;
+			const match = url.pathname.match(
+				/^\/channels\/(\d+|@me)\/(\d+)(?:\/threads\/(\d+))?\/?$/,
+			);
+			if (!match) return;
+			guildId = match[1];
+			channelId = match[3] || match[2];
+			path = url.pathname;
+		} else {
+			const row = e.target.closest('[data-list-item-id^="channels___"]');
+			const rowId = row
+				?.getAttribute("data-list-item-id")
+				.match(/^channels___(\d+)$/)?.[1];
+			const rowChannel = rowId && ChannelStore.getChannel(rowId);
+			if (!rowChannel?.guild_id || !SIDEBAR_CHANNEL_TYPES.has(rowChannel.type))
+				return;
+			guildId = rowChannel.guild_id;
+			channelId = rowId;
+			path = `/channels/${guildId}/${channelId}`;
+		}
 
-		const url = new URL(link.href, location.href);
-		if (url.origin !== location.origin) return;
-		const match = url.pathname.match(
-			/^\/channels\/(\d+|@me)\/(\d+)(?:\/threads\/(\d+))?\/?$/,
-		);
-		if (!match) return;
-
-		const [, guildId, parentChannelId, threadId] = match;
-		const channelId = threadId || parentChannelId;
 		const channel = ChannelStore.getChannel(channelId);
 		if (!channel) return;
 
@@ -4989,7 +5925,7 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 				? channel.name || getCurrentName(`/channels/@me/${channelId}`)
 				: channel.name
 					? `#${channel.name}`
-					: getCurrentName(url.pathname);
+					: getCurrentName(path);
 		TopBarRef.current.saveChannel(guildId, channelId, name);
 	}
 
@@ -5066,6 +6002,7 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 						if (tab.selected) {
 							const channelId = SelectedChannelStore.getChannelId();
 							return {
+								...tab,
 								name: getCurrentName(),
 								url: location.pathname,
 								selected: true,
@@ -5147,6 +6084,7 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 		return {
 			tabs: [],
 			tabFolders: [],
+			closedTabFolders: [],
 			favs: [],
 			favGroups: [],
 			showTabBar: true,
@@ -5177,6 +6115,7 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 			closeTabShortcut: [...DEFAULT_CLOSE_TAB_SHORTCUT],
 			sidebarTabShortcut: "meta",
 			commandNumberTabs: true,
+			rememberScroll: true,
 			alwaysFocusNewTabs: false,
 			useStandardNav: true,
 		};
@@ -5204,6 +6143,8 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 				Data.load(this.getSettingsPath(), "settings") ?? this.defaultVariables;
 		}
 		if (!Array.isArray(this.settings.tabFolders)) this.settings.tabFolders = [];
+		if (!Array.isArray(this.settings.closedTabFolders))
+			this.settings.closedTabFolders = [];
 		this.settings.favs = this.settings.favs.map((fav) => {
 			if (fav.channelId === undefined) {
 				const match = fav.url.match(/^\/channels\/[^\/]+\/(\d+)$/);
@@ -5221,6 +6162,7 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 		if (TopBarRef.current) {
 			this.settings.tabs = TopBarRef.current.state.tabs;
 			this.settings.tabFolders = TopBarRef.current.state.tabFolders;
+			this.settings.closedTabFolders = TopBarRef.current.state.closedTabFolders;
 			this.settings.favs = TopBarRef.current.state.favs;
 			this.settings.favGroups = TopBarRef.current.state.favGroups;
 		}
@@ -5429,6 +6371,17 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 							value: this.settings.commandNumberTabs !== false,
 							onChange: (checked) => {
 								this.settings.commandNumberTabs = checked;
+								this.saveSettings();
+							},
+						},
+						{
+							id: "rememberScroll",
+							type: "switch",
+							name: "Remember scroll position per tab",
+							note: "Each tab remembers how far you scrolled the channel list, the chat messages and the member list, and restores them when you switch back to that tab.",
+							value: this.settings.rememberScroll !== false,
+							onChange: (checked) => {
+								this.settings.rememberScroll = checked;
 								this.saveSettings();
 							},
 						},
