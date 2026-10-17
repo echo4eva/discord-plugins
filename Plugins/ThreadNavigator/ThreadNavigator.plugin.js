@@ -2,7 +2,7 @@
  * @name ThreadNavigator
  * @author echo4eva
  * @description A searchable thread list for any channel, with threads opening on the side.
- * @version 0.4.4
+ * @version 0.4.5
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ThreadNavigator/index.jsx
  */
 /*@cc_on
@@ -29,6 +29,9 @@
 
 @else@*/
 const CHANGES = {
+	"0.4.5": {
+		added: ["Ctrl-click a thread name to open it in a new tab on Windows"],
+	},
 	"0.4.4": {
 		added: [
 			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
@@ -679,7 +682,10 @@ module.exports = class ThreadNavigator {
 				this.selectThread(thread, event.shiftKey);
 				return;
 			}
-			this.openThread(thread, event.metaKey);
+			this.openThread(
+				thread,
+				process.platform === "darwin" ? event.metaKey : event.ctrlKey,
+			);
 		});
 		const main = node("span", "tn-item-main");
 		main.append(node("span", "tn-item-name", thread.name));

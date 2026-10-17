@@ -2,7 +2,7 @@
  * @name ChannelTabsMac
  * @author echo4eva, l0c4lh057, CarJem Generations, samfundev
  * @description Browser-style tabs, folders, and bookmarks for Discord.
- * @version 2.8.9-mac.25
+ * @version 2.8.9-mac.27
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabsMac/index.jsx
  */
 /*@cc_on
@@ -29,6 +29,12 @@
 
 @else@*/
 const CHANGES = {
+	"2.8.9-mac.27": {
+		added: [
+			"Customizable shortcuts for new tab, close tab, switching tabs, and tab numbers, with Windows defaults",
+			"Ctrl-click a thread name to open it in a new tab on Windows",
+		],
+	},
 	"2.8.9-mac.25": {
 		added: [
 			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
@@ -72,11 +78,37 @@ const CHANGES = {
 };
 // src/ChannelTabsMac/index.jsx
 var pluginMeta;
-var DEFAULT_CLOSE_TAB_SHORTCUT = ["Alt", "W"];
-function getCloseTabShortcut(settings) {
-	return settings.closeTabShortcut ?? [...DEFAULT_CLOSE_TAB_SHORTCUT];
+var IS_MAC = typeof process !== "undefined" && process.platform === "darwin";
+var TAB_SHORTCUTS = {
+	closeTab: {
+		setting: "closeTabShortcut",
+		default: IS_MAC ? ["Meta", "W"] : ["Control", "W"],
+	},
+	newTab: {
+		setting: "newTabShortcut",
+		default: IS_MAC ? ["Meta", "T"] : ["Control", "T"],
+	},
+	previousTab: {
+		setting: "previousTabShortcut",
+		default: ["Control", "PageUp"],
+	},
+	nextTab: {
+		setting: "nextTabShortcut",
+		default: ["Control", "PageDown"],
+	},
+};
+function getShortcut(settings, id) {
+	const { setting, default: fallback } = TAB_SHORTCUTS[id];
+	return settings[setting] ?? [...fallback];
 }
-function formatCloseTabShortcut(shortcut) {
+function getNumberTabModifier(settings) {
+	return (
+		settings.numberTabShortcut ??
+		(settings.commandNumberTabs === false ? "off" : "meta")
+	);
+}
+var KEY_NAMES = { pageup: "PgUp", pagedown: "PgDn", escape: "Esc" };
+function formatShortcut(shortcut) {
 	if (!Array.isArray(shortcut) || shortcut.length === 0) return "Off";
 	return shortcut
 		.map((part) => {
@@ -87,7 +119,10 @@ function formatCloseTabShortcut(shortcut) {
 				return process.platform === "darwin" ? "Command" : "Meta";
 			if (key === "control" || key === "ctrl") return "Ctrl";
 			if (key === "shift") return "Shift";
-			return String(part).toUpperCase();
+			if (KEY_NAMES[key]) return KEY_NAMES[key];
+			return key.length === 1
+				? key.toUpperCase()
+				: key[0].toUpperCase() + key.slice(1);
 		})
 		.join(" + ");
 }
@@ -133,6 +168,7 @@ function matchesShortcut(event, shortcut) {
 }
 function matchesClickShortcut(event, shortcut) {
 	if (shortcut === "off") return false;
+	if (!IS_MAC) shortcut = shortcut.replace("meta", "ctrl");
 	return (
 		[
 			event.metaKey && "meta",
@@ -144,14 +180,13 @@ function matchesClickShortcut(event, shortcut) {
 			.join("+") === shortcut
 	);
 }
-function getNumberedTabIndex(event) {
+function getNumberedTabIndex(event, modifier) {
+	if (modifier === "off" || event.shiftKey || event.isComposing) return -1;
+	const wanted = modifier === "alt" ? "alt" : IS_MAC ? "meta" : "ctrl";
 	if (
-		process.platform !== "darwin" ||
-		!event.metaKey ||
-		event.altKey ||
-		event.ctrlKey ||
-		event.shiftKey ||
-		event.isComposing
+		event.metaKey !== (wanted === "meta") ||
+		event.ctrlKey !== (wanted === "ctrl") ||
+		event.altKey !== (wanted === "alt")
 	)
 		return -1;
 	const digit =
@@ -1416,10 +1451,17 @@ function CreateSettingsContextMenu(instance, e) {
 												"white-space": "pre-wrap",
 											},
 										},
-										`${formatCloseTabShortcut(getCloseTabShortcut(instance.props.plugin.settings))} - Close Current Tab
-Ctrl + PgUp - Navigate to Left Tab
-Ctrl + PgDn - Navigate to Right Tab
-`,
+										[
+											["newTab", "New Tab"],
+											["closeTab", "Close Current Tab"],
+											["previousTab", "Navigate to Left Tab"],
+											["nextTab", "Navigate to Right Tab"],
+										]
+											.map(
+												([id, label]) =>
+													`${formatShortcut(getShortcut(instance.props.plugin.settings, id))} - ${label}`,
+											)
+											.join("\n"),
 									);
 								},
 							},
@@ -2894,7 +2936,6 @@ var Fav = (props) =>
 			onClick: (e) => {
 				if (Date.now() < suppressFavClickUntil) return;
 				if (
-					process.platform === "darwin" &&
 					props.showTabBar &&
 					matchesClickShortcut(e, props.getTabOpenShortcut())
 				) {
@@ -5788,7 +5829,6 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 	}
 	commandClickHandler(e) {
 		if (
-			process.platform !== "darwin" ||
 			!this.settings.showTabBar ||
 			!TopBarRef.current ||
 			e.button !== 0 ||
@@ -5848,8 +5888,7 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 	}
 	numberedTabKeybindHandler(e) {
 		if (!this.settings.showTabBar || !TopBarRef.current) return;
-		if (this.settings.commandNumberTabs === false) return;
-		const index = getNumberedTabIndex(e);
+		const index = getNumberedTabIndex(e, getNumberTabModifier(this.settings));
 		if (index < 0) return;
 		e.preventDefault();
 		e.stopImmediatePropagation();
@@ -5865,7 +5904,7 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 			!e.repeat &&
 			!e.isComposing &&
 			TopBarRef.current &&
-			matchesShortcut(e, getCloseTabShortcut(this.settings))
+			matchesShortcut(e, getShortcut(this.settings, "closeTab"))
 		) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -5873,35 +5912,18 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 			else window.close();
 			return;
 		}
-		const keybinds = [
-			{
-				ctrlKey: true,
-				keyCode: 33,
-				action: this.previousTab,
-			},
-			{
-				ctrlKey: true,
-				keyCode: 34,
-				action: this.nextTab,
-			},
-			{
-				ctrlKey: true,
-				keyCode: 84,
-				action: this.openNewTab,
-			},
-		];
-		keybinds.forEach((keybind) => {
-			if (
-				e.altKey === (keybind.altKey ?? false) &&
-				e.ctrlKey === (keybind.ctrlKey ?? false) &&
-				e.metaKey === (keybind.metaKey ?? false) &&
-				e.shiftKey === (keybind.shiftKey ?? false) &&
-				e.keyCode === keybind.keyCode
-			) {
-				e.stopPropagation();
-				keybind.action();
-			}
-		});
+		if (e.repeat || e.isComposing) return;
+		for (const [id, action] of [
+			["newTab", this.openNewTab],
+			["previousTab", this.previousTab],
+			["nextTab", this.nextTab],
+		]) {
+			if (!matchesShortcut(e, getShortcut(this.settings, id))) continue;
+			e.preventDefault();
+			e.stopPropagation();
+			action();
+			return;
+		}
 	}
 	//#endregion
 	//#region General Functions
@@ -6014,9 +6036,12 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 			showEmptyFavGroupBadges: false,
 			showQuickSettings: true,
 			showNavButtons: true,
-			closeTabShortcut: [...DEFAULT_CLOSE_TAB_SHORTCUT],
+			closeTabShortcut: [...TAB_SHORTCUTS.closeTab.default],
+			newTabShortcut: [...TAB_SHORTCUTS.newTab.default],
+			previousTabShortcut: [...TAB_SHORTCUTS.previousTab.default],
+			nextTabShortcut: [...TAB_SHORTCUTS.nextTab.default],
 			sidebarTabShortcut: "meta",
-			commandNumberTabs: true,
+			numberTabShortcut: "meta",
 			rememberScroll: true,
 			alwaysFocusNewTabs: false,
 			useStandardNav: true,
@@ -6258,13 +6283,24 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 					name: "Behavior",
 					settings: [
 						{
-							id: "commandNumberTabs",
-							type: "switch",
-							name: "Command + number switches tabs",
-							note: "Command + 1 through Command + 9 selects the matching tab instead of a server. Shortcuts beyond your open tabs do nothing.",
-							value: this.settings.commandNumberTabs !== false,
-							onChange: (checked) => {
-								this.settings.commandNumberTabs = checked;
+							id: "numberTabShortcut",
+							type: "dropdown",
+							name: "Switch tabs by number",
+							note: "Hold this key and press 1 to 9 to jump to that tab, counting visible tabs from the left. Turn it off to keep Discord's own shortcuts.",
+							value: getNumberTabModifier(this.settings),
+							options: [
+								{
+									label: IS_MAC ? "Command + number" : "Ctrl + number",
+									value: "meta",
+								},
+								{
+									label: IS_MAC ? "Option + number" : "Alt + number",
+									value: "alt",
+								},
+								{ label: "Off", value: "off" },
+							],
+							onChange: (value) => {
+								this.settings.numberTabShortcut = value;
 								this.saveSettings();
 							},
 						},
@@ -6279,19 +6315,40 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 								this.saveSettings();
 							},
 						},
-						{
-							id: "closeTabShortcut",
+						...[
+							{
+								id: "newTab",
+								name: "New tab",
+								note: "Opens a new tab. Click to record a different shortcut, or clear it to turn this off.",
+							},
+							{
+								id: "closeTab",
+								name: "Close current tab",
+								note: "Closes the Discord window on the last tab. Click to record a different shortcut, or clear it to turn this off.",
+							},
+							{
+								id: "previousTab",
+								name: "Previous tab",
+								note: "Switches to the tab on the left. Click to record a different shortcut, or clear it to turn this off.",
+							},
+							{
+								id: "nextTab",
+								name: "Next tab",
+								note: "Switches to the tab on the right. Click to record a different shortcut, or clear it to turn this off.",
+							},
+						].map(({ id, name, note }) => ({
+							id: TAB_SHORTCUTS[id].setting,
 							type: "keybind",
-							name: "Close current tab",
-							note: "Default: Option + W. Closes the Discord window on the last tab. Discord's native Command + W shortcut may take priority if you assign it here. Click to record a different shortcut, or clear it to turn this off.",
-							value: getCloseTabShortcut(this.settings),
+							name,
+							note: `Default: ${formatShortcut(TAB_SHORTCUTS[id].default)}. ${note}`,
+							value: getShortcut(this.settings, id),
 							max: 4,
 							clearable: true,
 							onChange: (value) => {
-								this.settings.closeTabShortcut = value;
+								this.settings[TAB_SHORTCUTS[id].setting] = value;
 								this.saveSettings();
 							},
-						},
+						})),
 						{
 							id: "sidebarTabShortcut",
 							type: "dropdown",
@@ -6299,10 +6356,19 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 							note: "Choose a modifier to hold while clicking a server icon, channel, thread, direct message, or bookmark. The new tab follows your auto-focus setting.",
 							value: this.settings.sidebarTabShortcut ?? "meta",
 							options: [
-								{ label: "Command-click", value: "meta" },
-								{ label: "Command-Shift-click", value: "meta+shift" },
-								{ label: "Option-click", value: "alt" },
-								{ label: "Option-Shift-click", value: "alt+shift" },
+								{
+									label: IS_MAC ? "Command-click" : "Ctrl-click",
+									value: "meta",
+								},
+								{
+									label: IS_MAC ? "Command-Shift-click" : "Ctrl-Shift-click",
+									value: "meta+shift",
+								},
+								{ label: IS_MAC ? "Option-click" : "Alt-click", value: "alt" },
+								{
+									label: IS_MAC ? "Option-Shift-click" : "Alt-Shift-click",
+									value: "alt+shift",
+								},
 								{ label: "Shift-click", value: "shift" },
 								{ label: "Off", value: "off" },
 							],
