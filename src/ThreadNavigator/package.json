@@ -1,6 +1,6 @@
 {
 	"description": "A searchable thread list for any channel, with threads opening on the side.",
-	"version": "0.4.5",
+	"version": "0.4.6",
 	"name": "thread-navigator",
 	"repository": {
 		"type": "git",

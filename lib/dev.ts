@@ -3,8 +3,8 @@ import { glob, watch } from "fs/promises";
 import bdPlugin from "./bd-plugin.ts";
 
 const ctx = await context({
-	entryPoints: process.argv.includes("--mac")
-		? ["src/ChannelTabsMac/index.jsx"]
+	entryPoints: process.argv.includes("--tabs")
+		? ["src/ChannelTabs/index.jsx"]
 		: process.argv.includes("--thread-navigator")
 			? ["src/ThreadNavigator/index.jsx"]
 			: process.argv.includes("--category-alerts")

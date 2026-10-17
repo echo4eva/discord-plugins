@@ -1,12 +1,12 @@
 {
 	"name": "discord-plugins",
 	"version": "1.0.0",
-	"description": "echo4eva's BetterDiscord plugins: ChannelTabsMac, ThreadNavigator, and CategoryAlerts",
+	"description": "echo4eva's BetterDiscord plugins: ChannelTabs, ThreadNavigator, and CategoryAlerts",
 	"type": "module",
 	"scripts": {
 		"dev": "node --watch lib/dev.ts",
 		"build": "node lib/dev.ts --build",
-		"build:mac": "node lib/dev.ts --build --mac",
+		"build:tabs": "node lib/dev.ts --build --tabs",
 		"build:threads": "node lib/dev.ts --build --thread-navigator",
 		"build:alerts": "node lib/dev.ts --build --category-alerts",
 		"format": "prettier --write ."

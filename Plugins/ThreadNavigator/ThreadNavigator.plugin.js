@@ -2,7 +2,7 @@
  * @name ThreadNavigator
  * @author echo4eva
  * @description A searchable thread list for any channel, with threads opening on the side.
- * @version 0.4.5
+ * @version 0.4.6
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ThreadNavigator/index.jsx
  */
 /*@cc_on
@@ -34,13 +34,7 @@ const CHANGES = {
 	},
 	"0.4.4": {
 		added: [
-			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
 			"ThreadNavigator bulk thread actions, Discord's thread right-click menu, and a per-tab browser",
-			"CategoryAlerts alerts for new messages, with separate sounds and volume",
-			"CategoryAlerts plugin for new channels in watched categories",
-			"Organize ChannelTabsMac tabs in folders",
-			"Navigate tabs by number and open servers in tabs",
-			"Close Discord window from last tab shortcut",
 		],
 	},
 	"0.2.3": {
@@ -48,10 +42,6 @@ const CHANGES = {
 	},
 	"0.2.2": {
 		fixed: ["Keep thread browser open across tab switches"],
-		added: [
-			"Open ChannelTabsMac bookmarks with tab shortcut",
-			"Configurable close-tab shortcut for ChannelTabsMac",
-		],
 	},
 	"0.2.1": {
 		improved: ["Fill thread browser and match Discord scrolling"],
@@ -118,6 +108,8 @@ var ThreadMenuBoundary = class extends React.Component {
 		return this.state.failed ? this.props.fallback() : this.props.children;
 	}
 };
+var tabApi = () =>
+	globalThis.__ChannelTabsTabAPI ?? globalThis.__ChannelTabsMacTabAPI;
 var css = `
 .tn-full-active > main[class*="chatContent"] { display: none !important; }
 .tn-browser { display: none; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; color: var(--text-default); background: var(--background-base-low); }
@@ -309,10 +301,10 @@ module.exports = class ThreadNavigator {
 		);
 	}
 	// Open state belongs to a tab and a channel, so a new tab on a thread from
-	// this channel starts with normal chat. Without ChannelTabsMac it is just
+	// this channel starts with normal chat. Without ChannelTabs it is just
 	// per channel.
 	browserKey(channel) {
-		const tabId = globalThis.__ChannelTabsMacTabAPI?.getActiveTabId?.() ?? "";
+		const tabId = tabApi()?.getActiveTabId?.() ?? "";
 		return `${tabId}:${channel.parentId}`;
 	}
 	stores() {
@@ -721,7 +713,7 @@ module.exports = class ThreadNavigator {
 		if (badges.childElementCount) item.append(badges);
 		const tab = node("button", "tn-tab-action", "\u2197");
 		tab.type = "button";
-		tab.title = "Open in ChannelTabsMac tab";
+		tab.title = "Open in a ChannelTabs tab";
 		tab.setAttribute("aria-label", `Open ${thread.name} in a new tab`);
 		tab.addEventListener("click", (event) => {
 			event.preventDefault();
@@ -1087,14 +1079,14 @@ module.exports = class ThreadNavigator {
 	openThread(thread, inTab) {
 		if (inTab) {
 			if (
-				globalThis.__ChannelTabsMacTabAPI?.openChannelInTab(
+				tabApi()?.openChannelInTab(
 					this.channel.guildId,
 					thread.id,
 					`#${thread.name}`,
 				)
 			)
 				return;
-			UI.showToast("Enable ChannelTabsMac to open a new tab.", {
+			UI.showToast("Enable ChannelTabs to open a new tab.", {
 				type: "info",
 			});
 			return;

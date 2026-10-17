@@ -1,6 +1,6 @@
-# ChannelTabsMac
+# ChannelTabs
 
-![ChannelTabsMac tab row with tab folders and the bookmark row](../../docs/images/channeltabsmac-overview.png)
+![ChannelTabs tab row with tab folders and the bookmark row](../../docs/images/channeltabs-overview.png)
 
 Browser-style tabs for Discord. Group tabs into folders, close a folder to save it for later, and drag tabs and bookmarks wherever you want. Each tab remembers where you were scrolled, and on macOS the tab bar sits neatly beside the window buttons.
 
@@ -14,7 +14,7 @@ Browser-style tabs for Discord. Group tabs into folders, close a folder to save 
 - **Scroll memory**: each tab remembers where you were in the channel list, the chat, and the member list.
 - **Copy link**: right-click a tab to copy its Discord link.
 
-![Closing a folder from its right-click menu and reopening it from the saved-folders button](../../docs/images/channeltabsmac-folders.png)
+![Closing a folder from its right-click menu and reopening it from the saved-folders button](../../docs/images/channeltabs-folders.png)
 
 ## Shortcuts
 
@@ -30,12 +30,12 @@ You can change every shortcut, or turn it off, in the plugin's settings.
 
 ## Install
 
-1. [Download ChannelTabsMac.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ChannelTabsMac/ChannelTabsMac.plugin.js).
+1. [Download ChannelTabs.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ChannelTabs/ChannelTabs.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and turn it on in BetterDiscord's Plugins settings.
-3. Turn off **ChannelTabs** if you have it. Both plugins use the same title bar.
+3. If you had the original ChannelTabs, this file replaces it. Turn off **ChannelTabsMac** if you used this plugin under its old name, and delete its file.
 
-ChannelTabsMac is built on [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations. It keeps its own settings, so your ChannelTabs tabs aren't copied over.
+This is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, previously called ChannelTabsMac. It keeps its own settings, so tabs from the original ChannelTabs aren't copied over. Tabs saved under ChannelTabsMac carry over.
 
 ## Develop
 
-Edit [`src/ChannelTabsMac/index.jsx`](../../src/ChannelTabsMac/index.jsx), then run `npm run build:mac` from the repository root.
+Edit [`src/ChannelTabs/index.jsx`](../../src/ChannelTabs/index.jsx), then run `npm run build:tabs` from the repository root.

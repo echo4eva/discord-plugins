@@ -410,8 +410,12 @@ function restoreTabScroll(tab) {
 
 //#endregion
 
+// Saved data keeps the plugin's former name, ChannelTabsMac. The original
+// ChannelTabs plugin already stores its own data under "ChannelTabs".
+const DATA_NAME = "ChannelTabsMac";
+
 const { ContextMenu, Patcher, Webpack, React, DOM, ReactUtils, UI } = new BdApi(
-	"ChannelTabsMac",
+	DATA_NAME,
 );
 const { Data } = BdApi;
 
@@ -4729,7 +4733,7 @@ module.exports = class ChannelTabs {
 				return true;
 			},
 		};
-		globalThis.__ChannelTabsMacTabAPI = this.tabApi;
+		globalThis.__ChannelTabsTabAPI = this.tabApi;
 		window.addEventListener("keydown", this.numberedTabKeybindHandler, true);
 		document.addEventListener("keydown", this.keybindHandler);
 		document.addEventListener("click", this.commandClickHandler, true);
@@ -4742,8 +4746,8 @@ module.exports = class ChannelTabs {
 	}
 
 	stop() {
-		if (globalThis.__ChannelTabsMacTabAPI === this.tabApi)
-			delete globalThis.__ChannelTabsMacTabAPI;
+		if (globalThis.__ChannelTabsTabAPI === this.tabApi)
+			delete globalThis.__ChannelTabsTabAPI;
 		this.removeStyle();
 		window.removeEventListener("keydown", this.numberedTabKeybindHandler, true);
 		document.removeEventListener("keydown", this.keybindHandler);
@@ -4778,7 +4782,7 @@ module.exports = class ChannelTabs {
 	}
 
 	showChangelog() {
-		const { Data } = new BdApi("ChannelTabsMac");
+		const { Data } = new BdApi(DATA_NAME);
 		const lastVersion = Data.load("lastVersion");
 		if (!lastVersion || !(lastVersion in CHANGES)) {
 			Data.save("lastVersion", this.meta.version);
@@ -6149,10 +6153,10 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 
 	getSettingsPath(useOldLocation) {
 		if (useOldLocation === true) {
-			return this.meta.name;
+			return DATA_NAME;
 		} else {
 			const user_id = UserStore.getCurrentUser()?.id;
-			return this.meta.name + "_new" + (user_id != null ? "_" + user_id : "");
+			return DATA_NAME + "_new" + (user_id != null ? "_" + user_id : "");
 		}
 	}
 

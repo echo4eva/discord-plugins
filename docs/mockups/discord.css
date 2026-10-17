@@ -85,7 +85,7 @@ body {
 .c5 { background: #3ba7c9; }
 .c6 { background: #9b59b6; }
 
-/* ---- Title bar and ChannelTabsMac tab row ---- */
+/* ---- Title bar and ChannelTabs tab row ---- */
 
 .titlebar {
 	background: var(--titlebar);

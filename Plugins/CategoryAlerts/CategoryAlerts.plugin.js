@@ -31,8 +31,6 @@
 const CHANGES = {
 	"0.2.0": {
 		added: [
-			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
-			"ThreadNavigator bulk thread actions, Discord's thread right-click menu, and a per-tab browser",
 			"CategoryAlerts alerts for new messages, with separate sounds and volume",
 		],
 	},

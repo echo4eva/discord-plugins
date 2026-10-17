@@ -1,9 +1,9 @@
 /**
- * @name ChannelTabsMac
+ * @name ChannelTabs
  * @author echo4eva, l0c4lh057, CarJem Generations, samfundev
  * @description Browser-style tabs, folders, and bookmarks for Discord.
  * @version 2.8.9-mac.27
- * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabsMac/index.jsx
+ * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabs/index.jsx
  */
 /*@cc_on
 @if (@_jscript)
@@ -32,15 +32,11 @@ const CHANGES = {
 	"2.8.9-mac.27": {
 		added: [
 			"Customizable shortcuts for new tab, close tab, switching tabs, and tab numbers, with Windows defaults",
-			"Ctrl-click a thread name to open it in a new tab on Windows",
 		],
 	},
 	"2.8.9-mac.25": {
 		added: [
 			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
-			"ThreadNavigator bulk thread actions, Discord's thread right-click menu, and a per-tab browser",
-			"CategoryAlerts alerts for new messages, with separate sounds and volume",
-			"CategoryAlerts plugin for new channels in watched categories",
 		],
 	},
 	"2.8.9-mac.9": {
@@ -51,20 +47,12 @@ const CHANGES = {
 	},
 	"2.8.9-mac.7": {
 		added: ["Close Discord window from last tab shortcut"],
-		fixed: [
-			"Make middle thread browser scrollable",
-			"Keep thread browser open across tab switches",
-		],
 	},
 	"2.8.9-mac.6": {
 		added: ["Open ChannelTabsMac bookmarks with tab shortcut"],
 	},
 	"2.8.9-mac.5": {
 		added: ["Configurable close-tab shortcut for ChannelTabsMac"],
-		improved: [
-			"Fill thread browser and match Discord scrolling",
-			"Keep thread browser beside side chat",
-		],
 	},
 	"2.8.9-mac.4": {
 		added: ["thread sidebar and full browser for Discord"],
@@ -76,7 +64,7 @@ const CHANGES = {
 		fixed: ["Add macOS ChannelTabs variant"],
 	},
 };
-// src/ChannelTabsMac/index.jsx
+// src/ChannelTabs/index.jsx
 var pluginMeta;
 var IS_MAC = typeof process !== "undefined" && process.platform === "darwin";
 var TAB_SHORTCUTS = {
@@ -446,8 +434,9 @@ function restoreTabScroll(tab) {
 	};
 	setTimeout(tick, 50);
 }
+var DATA_NAME = "ChannelTabsMac";
 var { ContextMenu, Patcher, Webpack, React, DOM, ReactUtils, UI } = new BdApi(
-	"ChannelTabsMac",
+	DATA_NAME,
 );
 var { Data } = BdApi;
 function getModule(filter, options = {}) {
@@ -4695,7 +4684,7 @@ module.exports = class ChannelTabs {
 				return true;
 			},
 		};
-		globalThis.__ChannelTabsMacTabAPI = this.tabApi;
+		globalThis.__ChannelTabsTabAPI = this.tabApi;
 		window.addEventListener("keydown", this.numberedTabKeybindHandler, true);
 		document.addEventListener("keydown", this.keybindHandler);
 		document.addEventListener("click", this.commandClickHandler, true);
@@ -4707,8 +4696,8 @@ module.exports = class ChannelTabs {
 		this.showChangelog();
 	}
 	stop() {
-		if (globalThis.__ChannelTabsMacTabAPI === this.tabApi)
-			delete globalThis.__ChannelTabsMacTabAPI;
+		if (globalThis.__ChannelTabsTabAPI === this.tabApi)
+			delete globalThis.__ChannelTabsTabAPI;
 		this.removeStyle();
 		window.removeEventListener("keydown", this.numberedTabKeybindHandler, true);
 		document.removeEventListener("keydown", this.keybindHandler);
@@ -4741,7 +4730,7 @@ module.exports = class ChannelTabs {
 		}, 250);
 	}
 	showChangelog() {
-		const { Data: Data2 } = new BdApi("ChannelTabsMac");
+		const { Data: Data2 } = new BdApi(DATA_NAME);
 		const lastVersion = Data2.load("lastVersion");
 		if (!lastVersion || !(lastVersion in CHANGES)) {
 			Data2.save("lastVersion", this.meta.version);
@@ -6049,10 +6038,10 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 	}
 	getSettingsPath(useOldLocation) {
 		if (useOldLocation === true) {
-			return this.meta.name;
+			return DATA_NAME;
 		} else {
 			const user_id = UserStore.getCurrentUser()?.id;
-			return this.meta.name + "_new" + (user_id != null ? "_" + user_id : "");
+			return DATA_NAME + "_new" + (user_id != null ? "_" + user_id : "");
 		}
 	}
 	loadSettings() {

@@ -68,6 +68,11 @@ class ThreadMenuBoundary extends React.Component {
 	}
 }
 
+// ChannelTabs (from echo4eva/discord-plugins) shares its tabs through this
+// global; versions named ChannelTabsMac used the older name.
+const tabApi = () =>
+	globalThis.__ChannelTabsTabAPI ?? globalThis.__ChannelTabsMacTabAPI;
+
 const css = `
 .tn-full-active > main[class*="chatContent"] { display: none !important; }
 .tn-browser { display: none; flex: 1; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; color: var(--text-default); background: var(--background-base-low); }
@@ -281,10 +286,10 @@ module.exports = class ThreadNavigator {
 	}
 
 	// Open state belongs to a tab and a channel, so a new tab on a thread from
-	// this channel starts with normal chat. Without ChannelTabsMac it is just
+	// this channel starts with normal chat. Without ChannelTabs it is just
 	// per channel.
 	browserKey(channel) {
-		const tabId = globalThis.__ChannelTabsMacTabAPI?.getActiveTabId?.() ?? "";
+		const tabId = tabApi()?.getActiveTabId?.() ?? "";
 		return `${tabId}:${channel.parentId}`;
 	}
 
@@ -708,7 +713,7 @@ module.exports = class ThreadNavigator {
 		if (badges.childElementCount) item.append(badges);
 		const tab = node("button", "tn-tab-action", "↗");
 		tab.type = "button";
-		tab.title = "Open in ChannelTabsMac tab";
+		tab.title = "Open in a ChannelTabs tab";
 		tab.setAttribute("aria-label", `Open ${thread.name} in a new tab`);
 		tab.addEventListener("click", (event) => {
 			event.preventDefault();
@@ -1092,14 +1097,14 @@ module.exports = class ThreadNavigator {
 	openThread(thread, inTab) {
 		if (inTab) {
 			if (
-				globalThis.__ChannelTabsMacTabAPI?.openChannelInTab(
+				tabApi()?.openChannelInTab(
 					this.channel.guildId,
 					thread.id,
 					`#${thread.name}`,
 				)
 			)
 				return;
-			UI.showToast("Enable ChannelTabsMac to open a new tab.", {
+			UI.showToast("Enable ChannelTabs to open a new tab.", {
 				type: "info",
 			});
 			return;
