@@ -3,7 +3,7 @@
  * @author echo4eva
  * @description Notifies you, with its own sounds, when a new channel or message appears in a category you watch, such as a ticket section.
  * @version 0.2.0
- * @source https://github.com/echo4eva/BetterDiscordStuff/blob/master/src/CategoryAlerts/index.jsx
+ * @source https://github.com/echo4eva/discord-plugins/blob/master/src/CategoryAlerts/index.jsx
  */
 /*@cc_on
 @if (@_jscript)
@@ -29,6 +29,13 @@
 
 @else@*/
 const CHANGES = {
+	"0.2.0": {
+		added: [
+			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
+			"ThreadNavigator bulk thread actions, Discord's thread right-click menu, and a per-tab browser",
+			"CategoryAlerts alerts for new messages, with separate sounds and volume",
+		],
+	},
 	"0.1.0": {
 		added: ["CategoryAlerts plugin for new channels in watched categories"],
 	},

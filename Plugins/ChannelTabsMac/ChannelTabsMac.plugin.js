@@ -1,11 +1,9 @@
 /**
  * @name ChannelTabsMac
- * @author samfundev, l0c4lh057, CarJem Generations
+ * @author echo4eva, l0c4lh057, CarJem Generations, samfundev
  * @description ChannelTabs with navigation beside the macOS window controls.
  * @version 2.8.9-mac.25
- * @authorId 76052829285916672
- * @donate https://github.com/sponsors/samfundev
- * @source https://github.com/echo4eva/BetterDiscordStuff/blob/master/src/ChannelTabsMac/index.jsx
+ * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChannelTabsMac/index.jsx
  */
 /*@cc_on
 @if (@_jscript)
@@ -32,7 +30,12 @@
 @else@*/
 const CHANGES = {
 	"2.8.9-mac.25": {
-		added: ["CategoryAlerts plugin for new channels in watched categories"],
+		added: [
+			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
+			"ThreadNavigator bulk thread actions, Discord's thread right-click menu, and a per-tab browser",
+			"CategoryAlerts alerts for new messages, with separate sounds and volume",
+			"CategoryAlerts plugin for new channels in watched categories",
+		],
 	},
 	"2.8.9-mac.9": {
 		added: ["Organize ChannelTabsMac tabs in folders"],

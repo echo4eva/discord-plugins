@@ -3,7 +3,7 @@
  * @author echo4eva
  * @description A central thread browser that opens selected threads in Discord’s side chat.
  * @version 0.4.4
- * @source https://github.com/echo4eva/BetterDiscordStuff/blob/master/src/ThreadNavigator/index.jsx
+ * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ThreadNavigator/index.jsx
  */
 /*@cc_on
 @if (@_jscript)
@@ -31,6 +31,9 @@
 const CHANGES = {
 	"0.4.4": {
 		added: [
+			"ChannelTabsMac per-tab scroll memory, drag markers for tabs and bookmarks, copy tab link, and closable tab folders",
+			"ThreadNavigator bulk thread actions, Discord's thread right-click menu, and a per-tab browser",
+			"CategoryAlerts alerts for new messages, with separate sounds and volume",
 			"CategoryAlerts plugin for new channels in watched categories",
 			"Organize ChannelTabsMac tabs in folders",
 			"Navigate tabs by number and open servers in tabs",
