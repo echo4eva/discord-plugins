@@ -502,6 +502,18 @@ const NavigationUtils = {
 		searchExports: true,
 	}),
 };
+// Guild tabs and bookmarks have no channel in their url, and going straight to
+// /channels/<guildId> leaves the chat pane empty until a channel is clicked.
+// Resolve them to the guild's last-viewed channel the way a server icon click does.
+const navigateToUrl = (url) => {
+	const guildId = url.match(/^\/channels\/(\d+)\/?$/)?.[1];
+	if (guildId && NavigationUtils.transitionToGuild)
+		NavigationUtils.transitionToGuild(
+			guildId,
+			SelectedChannelStore.getChannelId(guildId),
+		);
+	else NavigationUtils.transitionTo(url);
+};
 const Permissions = getModule(byKeys("computePermissions"));
 const MessageActions = Webpack.getByKeys("jumpToMessage", "fetchMessages");
 const SelectedChannelStore = getModule(byStoreName("SelectedChannelStore"));
@@ -2932,7 +2944,7 @@ const Fav = (props) => (
 					props.guildId,
 					SelectedChannelStore.getChannelId(props.guildId),
 				);
-			else NavigationUtils.transitionTo(props.url);
+			else navigateToUrl(props.url);
 		}}
 		onMouseUp={(e) => {
 			if (e.button !== 1) return;
@@ -3873,7 +3885,7 @@ const TopBar = class TopBar extends React.Component {
 			},
 		);
 		switching = true;
-		NavigationUtils.transitionTo(this.state.tabs[tabIndex].url);
+		navigateToUrl(this.state.tabs[tabIndex].url);
 		switching = false;
 		if (rememberScroll) restoreTabScroll(this.state.tabs[tabIndex]);
 	}
@@ -5746,7 +5758,7 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 	ifReopenLastChannelDefault() {
 		if (this.settings.reopenLastChannel) {
 			switching = true;
-			NavigationUtils.transitionTo(
+			navigateToUrl(
 				(
 					this.settings.tabs.find((tab) => tab.selected) ||
 					this.settings.tabs[0]

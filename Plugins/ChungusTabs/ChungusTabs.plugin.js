@@ -499,6 +499,15 @@ var NavigationUtils = {
 		searchExports: true,
 	}),
 };
+var navigateToUrl = (url) => {
+	const guildId = url.match(/^\/channels\/(\d+)\/?$/)?.[1];
+	if (guildId && NavigationUtils.transitionToGuild)
+		NavigationUtils.transitionToGuild(
+			guildId,
+			SelectedChannelStore.getChannelId(guildId),
+		);
+	else NavigationUtils.transitionTo(url);
+};
 var Permissions = getModule(byKeys("computePermissions"));
 var MessageActions = Webpack.getByKeys("jumpToMessage", "fetchMessages");
 var SelectedChannelStore = getModule(byStoreName("SelectedChannelStore"));
@@ -2926,7 +2935,7 @@ var Fav = (props) =>
 						props.guildId,
 						SelectedChannelStore.getChannelId(props.guildId),
 					);
-				else NavigationUtils.transitionTo(props.url);
+				else navigateToUrl(props.url);
 			},
 			onMouseUp: (e) => {
 				if (e.button !== 1) return;
@@ -3867,7 +3876,7 @@ var TopBar = class TopBar2 extends React.Component {
 			},
 		);
 		switching = true;
-		NavigationUtils.transitionTo(this.state.tabs[tabIndex].url);
+		navigateToUrl(this.state.tabs[tabIndex].url);
 		switching = false;
 		if (rememberScroll) restoreTabScroll(this.state.tabs[tabIndex]);
 	}
@@ -5659,7 +5668,7 @@ body.channelTabs-draggingFav .channelTabs-favContainer {
 	ifReopenLastChannelDefault() {
 		if (this.settings.reopenLastChannel) {
 			switching = true;
-			NavigationUtils.transitionTo(
+			navigateToUrl(
 				(
 					this.settings.tabs.find((tab) => tab.selected) ||
 					this.settings.tabs[0]
