@@ -3727,39 +3727,43 @@ function getFavRowSegments(favs, favGroups) {
 	return segments;
 }
 
-const FavBar = (props) => (
-	<div
-		className={
-			"channelTabs-favContainer" +
-			(props.favs.length == 0 ? " channelTabs-noFavs" : "")
-		}
-		data-fav-count={props.favs.length}
-		ref={stopTitleBarDoubleClick}
-		onContextMenu={(e) => {
-			CreateFavBarContextMenu(props, e);
-		}}
-	>
-		{props.favs.length > 0 ? (
-			getFavRowSegments(props.favs, props.favGroups).map((segment) =>
-				segment.type === "group" ? (
-					<React.Fragment key={`group-${segment.group.groupId}`}>
-						<FavFolders {...props} only={segment.group} />
-					</React.Fragment>
-				) : (
-					<React.Fragment key={`favs-${segment.range[0]}`}>
-						<FavItems group={null} {...props} range={segment.range} />
-					</React.Fragment>
-				),
-			)
-		) : (
-			<NoFavItemsPlaceholder />
-		)}
-		<div className="channelTabs-newTab" onClick={() => props.addFavGroup()}>
-			<PlusAlt />
+const FavBar = (props) => {
+	// An empty group still belongs on the bar, so the bar is only empty when
+	// there are no groups either.
+	const isEmpty = props.favs.length == 0 && props.favGroups.length == 0;
+	return (
+		<div
+			className={
+				"channelTabs-favContainer" + (isEmpty ? " channelTabs-noFavs" : "")
+			}
+			data-fav-count={props.favs.length}
+			ref={stopTitleBarDoubleClick}
+			onContextMenu={(e) => {
+				CreateFavBarContextMenu(props, e);
+			}}
+		>
+			{!isEmpty ? (
+				getFavRowSegments(props.favs, props.favGroups).map((segment) =>
+					segment.type === "group" ? (
+						<React.Fragment key={`group-${segment.group.groupId}`}>
+							<FavFolders {...props} only={segment.group} />
+						</React.Fragment>
+					) : (
+						<React.Fragment key={`favs-${segment.range[0]}`}>
+							<FavItems group={null} {...props} range={segment.range} />
+						</React.Fragment>
+					),
+				)
+			) : (
+				<NoFavItemsPlaceholder />
+			)}
+			<div className="channelTabs-newTab" onClick={() => props.addFavGroup()}>
+				<PlusAlt />
+			</div>
+			{props.trailing}
 		</div>
-		{props.trailing}
-	</div>
-);
+	);
+};
 
 const TopBar = class TopBar extends React.Component {
 	//#region Constructor

@@ -3715,20 +3715,20 @@ function getFavRowSegments(favs, favGroups) {
 	}
 	return segments;
 }
-var FavBar = (props) =>
-	/* @__PURE__ */ React.createElement(
+var FavBar = (props) => {
+	const isEmpty = props.favs.length == 0 && props.favGroups.length == 0;
+	return /* @__PURE__ */ React.createElement(
 		"div",
 		{
 			className:
-				"channelTabs-favContainer" +
-				(props.favs.length == 0 ? " channelTabs-noFavs" : ""),
+				"channelTabs-favContainer" + (isEmpty ? " channelTabs-noFavs" : ""),
 			"data-fav-count": props.favs.length,
 			ref: stopTitleBarDoubleClick,
 			onContextMenu: (e) => {
 				CreateFavBarContextMenu(props, e);
 			},
 		},
-		props.favs.length > 0
+		!isEmpty
 			? getFavRowSegments(props.favs, props.favGroups).map((segment) =>
 					segment.type === "group"
 						? /* @__PURE__ */ React.createElement(
@@ -3757,6 +3757,7 @@ var FavBar = (props) =>
 		),
 		props.trailing,
 	);
+};
 var TopBar = class TopBar2 extends React.Component {
 	//#region Constructor
 	constructor(props) {
