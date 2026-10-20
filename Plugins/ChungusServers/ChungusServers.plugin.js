@@ -2,7 +2,7 @@
  * @name ChungusServers
  * @author echo4eva
  * @description A wider, resizable server list with named folders you can drag around.
- * @version 1.4.0
+ * @version 1.5.0
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChungusServers/index.jsx
  */
 /*@cc_on
@@ -29,6 +29,9 @@
 
 @else@*/
 const CHANGES = {
+	"1.5.0": {
+		added: ["Native Vencord plugins with shared React interfaces"],
+	},
 	"1.4.0": {
 		added: [
 			"Folder pictures, hidden icons, and mute and notification settings for whole folders",
@@ -38,61 +41,107 @@ const CHANGES = {
 		added: ["ChungusServers, a wide server list with named folders"],
 	},
 };
-// src/ChungusServers/index.jsx
-var api = new BdApi("ChungusServers");
-var { Webpack, Patcher, ContextMenu, Data, DOM, UI, React, Hooks } = api;
-var {
-	useState,
-	useEffect,
-	useMemo,
-	useRef,
-	useContext,
-	useReducer,
-	createContext,
-} = React;
-var { useStateFromStores } = Hooks;
-var SortedGuildStore = Webpack.getStore("SortedGuildStore");
-var GuildStore = Webpack.getStore("GuildStore");
-var GuildReadStateStore = Webpack.getStore("GuildReadStateStore");
-var SelectedGuildStore = Webpack.getStore("SelectedGuildStore");
-var SelectedChannelStore = Webpack.getStore("SelectedChannelStore");
-var UserGuildSettingsStore = Webpack.getStore("UserGuildSettingsStore");
-var PrivateChannelReadStateStore = Webpack.getStore(
-	"PrivateChannelReadStateStore",
-);
-var ReadStateStore = Webpack.getStore("ReadStateStore");
-var ChannelStore = Webpack.getStore("ChannelStore");
-var UserStore = Webpack.getStore("UserStore");
-var RelationshipStore = Webpack.getStore("RelationshipStore");
-var RTCConnectionStore = Webpack.getStore("RTCConnectionStore");
-var ChannelRTCStore = Webpack.getStore("ChannelRTCStore");
-var GuildIconUtils = Webpack.getByKeys("getGuildIconURL");
-var ChannelIconUtils = Webpack.getByKeys("getChannelIconURL");
-var GuildNavigation = Webpack.getByKeys("transitionToGuildSync");
-var transitionTo = Webpack.getByStrings("transitionTo - Transitioning to ", {
-	searchExports: true,
-});
-var GuildCreation = Webpack.getByKeys("openCreateGuildModal");
-var GlobalDiscovery = Webpack.getByKeys("transitionToGlobalDiscovery");
-var NotificationActions = Webpack.getByKeys("updateGuildNotificationSettings");
-var getMuteOptions = Webpack.getByStrings(
-	".MINUTES_15",
-	".HOURS_24",
-	".ALWAYS",
-	{
-		searchExports: true,
-	},
-);
-var saveGuildFolders = Webpack.getModule(
-	(m) =>
-		typeof m === "function" && String(m).includes('updateAsync("guildFolders"'),
-	{ searchExports: true },
-);
-var [GuildsBarModule, GuildsBarKey] =
-	Webpack.getWithKey(
-		(m) => m?.$$typeof && String(m.type).includes('"guildsnav"'),
-	) ?? [];
-var SidebarClasses = Webpack.getByKeys("guilds", "sidebar", "panels");
+// src/shared/confirm.js
+function showConfirmationModal(title, content, options = {}) {
+	const alerts =
+		window.BdCompatLayer && globalThis.Vencord?.Webpack?.Common?.Alerts;
+	if (!alerts?.show)
+		return BdApi.UI.showConfirmationModal(title, content, options);
+	alerts.show({
+		title,
+		body: content,
+		confirmText: options.confirmText ?? "Okay",
+		cancelText:
+			options.cancelText === null ? void 0 : (options.cancelText ?? "Cancel"),
+		onConfirm: options.onConfirm,
+		onCancel: options.onCancel,
+	});
+}
+
+// src/shared/chungusServers/core.jsx
+var React;
+var useState;
+var useEffect;
+var useMemo;
+var useRef;
+var useContext;
+var useReducer;
+var useStateFromStores;
+var SortedGuildStore;
+var GuildStore;
+var GuildReadStateStore;
+var SelectedGuildStore;
+var SelectedChannelStore;
+var UserGuildSettingsStore;
+var PrivateChannelReadStateStore;
+var ReadStateStore;
+var ChannelStore;
+var UserStore;
+var RelationshipStore;
+var RTCConnectionStore;
+var ChannelRTCStore;
+var GuildIconUtils;
+var ChannelIconUtils;
+var GuildNavigation;
+var transitionTo;
+var GuildCreation;
+var GlobalDiscovery;
+var NotificationActions;
+var getMuteOptions;
+var saveGuildFolders;
+var SidebarClasses;
+var platform;
+var DragContext;
+var ErrorBoundary;
+function init(options) {
+	platform = options;
+	React = options.React;
+	({ useState, useEffect, useMemo, useRef, useContext, useReducer } = React);
+	useStateFromStores = options.useStateFromStores;
+	({
+		SortedGuildStore,
+		GuildStore,
+		GuildReadStateStore,
+		SelectedGuildStore,
+		SelectedChannelStore,
+		UserGuildSettingsStore,
+		PrivateChannelReadStateStore,
+		ReadStateStore,
+		ChannelStore,
+		UserStore,
+		RelationshipStore,
+		RTCConnectionStore,
+		ChannelRTCStore,
+	} = options.stores);
+	({
+		GuildIconUtils,
+		ChannelIconUtils,
+		GuildNavigation,
+		transitionTo,
+		GuildCreation,
+		GlobalDiscovery,
+		NotificationActions,
+		getMuteOptions,
+		saveGuildFolders,
+		SidebarClasses,
+	} = options.modules);
+	DragContext = React.createContext(null);
+	ErrorBoundary = class extends React.Component {
+		state = { error: null };
+		static getDerivedStateFromError(error) {
+			return { error };
+		}
+		componentDidCatch(error) {
+			console.error("ChungusServers crashed; showing Discord's bar", error);
+		}
+		render() {
+			return this.state.error ? this.props.fallback : this.props.children;
+		}
+	};
+}
+function isSupported() {
+	return Boolean(SortedGuildStore && GuildStore);
+}
 var DRAG_TYPE = "application/x-chungus-servers";
 var ICON_MODE_BELOW = 120;
 var MIN_WIDTH = 160;
@@ -125,7 +174,7 @@ var settingsListeners = /* @__PURE__ */ new Set();
 function setSettings(patch, persist = true) {
 	if (patch.parents) patch = { ...patch, icons: pruneParentIcons(patch) };
 	settings = { ...settings, ...patch };
-	if (persist) Data.save("settings", settings);
+	if (persist) platform.storage.save("settings", settings);
 	for (const listener of settingsListeners) listener();
 }
 function useSettings() {
@@ -244,9 +293,7 @@ function chooseIconImage(key) {
 		try {
 			setIcon(key, { image: await shrinkImage(file), hidden: false });
 		} catch {
-			UI.showToast("ChungusServers couldn't read that image", {
-				type: "error",
-			});
+			platform.toast("ChungusServers couldn't read that image", "error");
 		}
 	};
 	input.click();
@@ -606,18 +653,24 @@ function applyMove(folders, parents, drag, move) {
 	}
 	return finish();
 }
+function loadBackup() {
+	const backup = platform.storage.load("backup");
+	return backup?.folders ? backup : null;
+}
+function forgetBackup() {
+	if (platform.storage.delete) platform.storage.delete("backup");
+	else platform.storage.save("backup", {});
+}
 function backUpServerList() {
-	if (Data.load("backup")) return;
-	Data.save("backup", {
+	if (loadBackup()) return;
+	platform.storage.save("backup", {
 		savedAt: Date.now(),
 		folders: cloneFolders(SortedGuildStore.getGuildFolders()),
 	});
 }
 function saveServerList(items) {
 	if (!saveGuildFolders) {
-		UI.showToast("ChungusServers can't save the server list here", {
-			type: "error",
-		});
+		platform.toast("ChungusServers can't save the server list here", "error");
 		return;
 	}
 	backUpServerList();
@@ -727,6 +780,8 @@ var MENUS = {
 var webpackRequire = null;
 function getWebpackRequire() {
 	if (webpackRequire) return webpackRequire;
+	webpackRequire = platform.webpackRequire?.();
+	if (webpackRequire) return webpackRequire;
 	const requires = [];
 	const chunk = window.webpackChunkdiscord_app;
 	chunk.push([
@@ -792,15 +847,13 @@ function openNativeMenu(event, kind, props) {
 				stopPropagation() {},
 				preventDefault() {},
 			};
-			ContextMenu.open(place, (menuProps) =>
+			platform.openMenu(place, (menuProps) =>
 				/* @__PURE__ */ React.createElement(Menu, { ...menuProps, ...props }),
 			);
 		})
 		.catch((error) => {
 			console.error("ChungusServers: couldn't open the menu", error);
-			UI.showToast("ChungusServers couldn't open Discord's menu", {
-				type: "error",
-			});
+			platform.toast("ChungusServers couldn't open Discord's menu", "error");
 		});
 }
 var ChevronIcon = ({ open }) =>
@@ -975,7 +1028,6 @@ function MentionBadge({ count }) {
 		count > 999 ? "999+" : count,
 	);
 }
-var DragContext = createContext(null);
 function cls(...names) {
 	return names.filter(Boolean).join(" ");
 }
@@ -1233,7 +1285,7 @@ function NameInput({ initial, onDone }) {
 function openParentMenu(event, id, empty) {
 	event.preventDefault();
 	event.stopPropagation();
-	const items = ContextMenu.buildMenuChildren([
+	const items = platform.buildMenuChildren([
 		{
 			id: "rename",
 			label: "Rename Folder",
@@ -1248,9 +1300,9 @@ function openParentMenu(event, id, empty) {
 			action: () => ungroupParent(id),
 		},
 	]);
-	ContextMenu.open(event, (props) =>
+	platform.openMenu(event, (props) =>
 		/* @__PURE__ */ React.createElement(
-			ContextMenu.Menu,
+			platform.Menu,
 			{ ...props, navId: "chungus-servers-parent" },
 			items,
 		),
@@ -1965,23 +2017,10 @@ function ServerColumn({ barProps, native }) {
 		/* @__PURE__ */ React.createElement(ResizeHandle, { columnRef }),
 	);
 }
-var ErrorBoundary = class extends React.Component {
-	state = { error: null };
-	static getDerivedStateFromError(error) {
-		return { error };
-	}
-	componentDidCatch(error) {
-		console.error("ChungusServers crashed; showing Discord's bar", error);
-	}
-	render() {
-		return this.state.error ? this.props.fallback : this.props.children;
-	}
-};
-var wideSidebar = SidebarClasses
-	? `body .${SidebarClasses.sidebar}:has(> .chungusServers-column:not(.chungusServers-iconMode))`
-	: null;
-var layoutCss = wideSidebar
-	? `
+function layoutCss() {
+	if (!SidebarClasses) return "";
+	const wideSidebar = `body .${SidebarClasses.sidebar}:has(> .chungusServers-column:not(.chungusServers-iconMode))`;
+	return `
 ${wideSidebar} > .${SidebarClasses.panels} {
 	width: calc(100% - var(--custom-panels-spacing, 8px) * 2) !important;
 }
@@ -1989,8 +2028,8 @@ ${wideSidebar} > .${SidebarClasses.panels} {
 ${wideSidebar} > .${SidebarClasses.sidebarList} {
 	position: relative;
 }
-`
-	: "";
+`;
+}
 var css = `
 .chungusServers-column {
 	grid-area: guildsList;
@@ -2465,134 +2504,85 @@ body.chungusServers-resizing .chungusServers-column > nav {
 	transition: none !important;
 }
 `;
+function getCss() {
+	return css + layoutCss();
+}
 function isToggleShortcut(event) {
 	const mod = navigator.platform.startsWith("Mac")
 		? event.metaKey
 		: event.ctrlKey;
 	return mod && event.shiftKey && !event.altKey && event.code === "KeyB";
 }
-function rerenderApp() {
-	const root = document.getElementById("app-mount");
-	const containerKey = Object.keys(root).find((k) =>
-		k.startsWith("__reactContainer$"),
-	);
-	const target = BdApi.Utils.findInTree(
-		root[containerKey],
-		(node) => node.stateNode?.isReactComponent,
-		{ walkable: ["child"] },
-	);
-	if (!target) return;
-	const { render } = target.stateNode;
-	if (render.toString().includes("null")) return;
-	target.stateNode.render = () => null;
-	target.stateNode.forceUpdate(() => {
-		target.stateNode.render = render;
-		target.stateNode.forceUpdate();
-	});
+function loadSettings() {
+	settings = { ...defaults, ...(platform.storage.load("settings") ?? {}) };
 }
-module.exports = class ChungusServers {
-	constructor(meta) {
-		this.meta = meta;
-		this.onKeyDown = this.onKeyDown.bind(this);
-	}
-	start() {
-		settings = { ...defaults, ...(Data.load("settings") ?? {}) };
-		if (!GuildsBarModule || !SortedGuildStore || !GuildStore) {
-			UI.showToast("ChungusServers couldn't find Discord's server list", {
-				type: "error",
-			});
-			return;
-		}
-		DOM.addStyle(css + layoutCss);
-		this.unpatchMenu = ContextMenu.patch("guild-context", (menu, props) => {
-			if (!Array.isArray(menu?.props?.children)) return;
-			const guild = props?.guild;
-			const items = [];
-			if (guild) {
-				items.push({
-					id: "chungus-servers-pin",
-					label: settings.pinned.includes(guild.id)
-						? "Unpin Server"
-						: "Pin Server",
-					action: () => togglePin(guild.id),
-				});
-				items.push(...parentMenuItems(`g:${guild.id}`));
-				const hidden = settings.icons[`g:${guild.id}`]?.hidden;
-				const folder = SortedGuildStore.getGuildFolders().find(
-					(folder2) =>
-						folder2.folderId != null && folder2.guildIds.includes(guild.id),
-				);
-				if (
-					!settings.iconMode &&
-					!settings.icons[`f:${folder?.folderId}`]?.hideServers
-				)
-					items.push({
-						id: "chungus-servers-hide-icon",
-						label: hidden ? "Show Server Icon" : "Hide Server Icon",
-						action: () => setIcon(`g:${guild.id}`, { hidden: !hidden }),
-					});
-			} else if (props?.folderId != null) {
-				items.push(...parentMenuItems(`f:${props.folderId}`));
-				if (!settings.iconMode) {
-					const key = `f:${props.folderId}`;
-					const hideServers = settings.icons[key]?.hideServers;
-					items.push(folderIconMenu(key), {
-						id: "chungus-servers-hide-server-icons",
-						label: hideServers ? "Show Server Icons" : "Hide Server Icons",
-						action: () => setIcon(key, { hideServers: !hideServers }),
-					});
-				}
-			}
-			const groups = [];
-			if (props?.folderId != null && !guild)
-				groups.push({
-					type: "group",
-					items: folderNotificationItems(props.folderId),
-				});
-			if (items.length) groups.push({ type: "group", items });
-			if (groups.length)
-				menu.props.children.push(ContextMenu.buildMenuChildren(groups));
+function onKeyDown(event) {
+	if (event.repeat || !isToggleShortcut(event)) return;
+	event.preventDefault();
+	event.stopPropagation();
+	setSettings({ iconMode: !settings.iconMode });
+}
+function renderServerBar(barProps, native) {
+	return /* @__PURE__ */ React.createElement(
+		ErrorBoundary,
+		{ fallback: native },
+		/* @__PURE__ */ React.createElement(ServerColumn, { barProps, native }),
+	);
+}
+function guildMenuGroups(props) {
+	const guild = props?.guild;
+	const items = [];
+	if (guild) {
+		items.push({
+			id: "chungus-servers-pin",
+			label: settings.pinned.includes(guild.id) ? "Unpin Server" : "Pin Server",
+			action: () => togglePin(guild.id),
 		});
-		Patcher.after(GuildsBarModule[GuildsBarKey], "type", (_, [props], native) =>
-			/* @__PURE__ */ React.createElement(
-				ErrorBoundary,
-				{ fallback: native },
-				/* @__PURE__ */ React.createElement(ServerColumn, {
-					barProps: props,
-					native,
-				}),
-			),
+		items.push(...parentMenuItems(`g:${guild.id}`));
+		const hidden = settings.icons[`g:${guild.id}`]?.hidden;
+		const folder = SortedGuildStore.getGuildFolders().find(
+			(folder2) =>
+				folder2.folderId != null && folder2.guildIds.includes(guild.id),
 		);
-		rerenderApp();
-		document.addEventListener("keydown", this.onKeyDown, true);
+		if (
+			!settings.iconMode &&
+			!settings.icons[`f:${folder?.folderId}`]?.hideServers
+		)
+			items.push({
+				id: "chungus-servers-hide-icon",
+				label: hidden ? "Show Server Icon" : "Hide Server Icon",
+				action: () => setIcon(`g:${guild.id}`, { hidden: !hidden }),
+			});
+	} else if (props?.folderId != null) {
+		items.push(...parentMenuItems(`f:${props.folderId}`));
+		if (!settings.iconMode) {
+			const key = `f:${props.folderId}`;
+			const hideServers = settings.icons[key]?.hideServers;
+			items.push(folderIconMenu(key), {
+				id: "chungus-servers-hide-server-icons",
+				label: hideServers ? "Show Server Icons" : "Hide Server Icons",
+				action: () => setIcon(key, { hideServers: !hideServers }),
+			});
+		}
 	}
-	stop() {
-		document.removeEventListener("keydown", this.onKeyDown, true);
-		Patcher.unpatchAll();
-		this.unpatchMenu?.();
-		DOM.removeStyle();
-		document.body.classList.remove("chungusServers-resizing");
-		rerenderApp();
-	}
-	onKeyDown(event) {
-		if (event.repeat || !isToggleShortcut(event)) return;
-		event.preventDefault();
-		event.stopPropagation();
-		setSettings({ iconMode: !settings.iconMode });
-	}
-	getSettingsPanel() {
-		return /* @__PURE__ */ React.createElement(SettingsPanel, null);
-	}
-};
+	const groups = [];
+	if (props?.folderId != null && !guild)
+		groups.push({
+			type: "group",
+			items: folderNotificationItems(props.folderId),
+		});
+	if (items.length) groups.push({ type: "group", items });
+	return groups;
+}
 function SettingsPanel() {
 	const current = useSettings();
-	const [backup, setBackup] = useState(() => Data.load("backup"));
+	const [backup, setBackup] = useState(loadBackup);
 	const shortcut = navigator.platform.startsWith("Mac")
 		? "Command-Shift-B"
 		: "Ctrl-Shift-B";
 	const restore = () => {
 		if (!backup || !saveGuildFolders) return;
-		UI.showConfirmationModal(
+		platform.confirm(
 			"Restore server list",
 			`Put your servers and folders back the way they were on ${new Date(backup.savedAt).toLocaleString()}? Changes since then are lost.`,
 			{
@@ -2600,7 +2590,7 @@ function SettingsPanel() {
 				danger: true,
 				onConfirm: () => {
 					saveGuildFolders(backup.folders);
-					UI.showToast("Server list restored", { type: "success" });
+					platform.toast("Server list restored", "success");
 				},
 			},
 		);
@@ -2608,7 +2598,7 @@ function SettingsPanel() {
 	return /* @__PURE__ */ React.createElement(
 		"div",
 		null,
-		UI.buildSettingsPanel({
+		platform.SettingsSwitches({
 			settings: [
 				{
 					type: "switch",
@@ -2659,7 +2649,7 @@ function SettingsPanel() {
 					{
 						className: "chungusServers-settingsButton",
 						onClick: () => {
-							Data.delete("backup");
+							forgetBackup();
 							setBackup(null);
 						},
 					},
@@ -2675,4 +2665,138 @@ function SettingsPanel() {
 		),
 	);
 }
+
+// src/ChungusServers/index.jsx
+var api = new BdApi("ChungusServers");
+var {
+	Webpack,
+	Patcher,
+	ContextMenu,
+	Data,
+	DOM,
+	UI,
+	React: React2,
+	Hooks,
+} = api;
+var [GuildsBarModule, GuildsBarKey] =
+	Webpack.getWithKey(
+		(m) => m?.$$typeof && String(m.type).includes('"guildsnav"'),
+	) ?? [];
+init({
+	React: React2,
+	// BetterVencord (Vesktop/Vencord) has no BdApi.Hooks, so fall back to Discord's own hook.
+	useStateFromStores:
+		Hooks?.useStateFromStores ??
+		Webpack.getByStrings("useStateFromStores", { searchExports: true }),
+	stores: Object.fromEntries(
+		[
+			"SortedGuildStore",
+			"GuildStore",
+			"GuildReadStateStore",
+			"SelectedGuildStore",
+			"SelectedChannelStore",
+			"UserGuildSettingsStore",
+			"PrivateChannelReadStateStore",
+			"ReadStateStore",
+			"ChannelStore",
+			"UserStore",
+			"RelationshipStore",
+			"RTCConnectionStore",
+			"ChannelRTCStore",
+		].map((name) => [name, Webpack.getStore(name)]),
+	),
+	modules: {
+		GuildIconUtils: Webpack.getByKeys("getGuildIconURL"),
+		ChannelIconUtils: Webpack.getByKeys("getChannelIconURL"),
+		GuildNavigation: Webpack.getByKeys("transitionToGuildSync"),
+		transitionTo: Webpack.getByStrings("transitionTo - Transitioning to ", {
+			searchExports: true,
+		}),
+		GuildCreation: Webpack.getByKeys("openCreateGuildModal"),
+		GlobalDiscovery: Webpack.getByKeys("transitionToGlobalDiscovery"),
+		NotificationActions: Webpack.getByKeys("updateGuildNotificationSettings"),
+		getMuteOptions: Webpack.getByStrings(
+			".MINUTES_15",
+			".HOURS_24",
+			".ALWAYS",
+			{
+				searchExports: true,
+			},
+		),
+		saveGuildFolders: Webpack.getModule(
+			(m) =>
+				typeof m === "function" &&
+				String(m).includes('updateAsync("guildFolders"'),
+			{ searchExports: true },
+		),
+		SidebarClasses: Webpack.getByKeys("guilds", "sidebar", "panels"),
+	},
+	storage: {
+		load: (key) => Data.load(key),
+		save: (key, value) => Data.save(key, value),
+		delete: Data.delete && ((key) => Data.delete(key)),
+	},
+	toast: (text, type) => UI.showToast(text, { type }),
+	confirm: showConfirmationModal,
+	openMenu: (event, render) => ContextMenu.open(event, render),
+	buildMenuChildren: (items) => ContextMenu.buildMenuChildren(items),
+	Menu: ContextMenu.Menu,
+	SettingsSwitches: (options) => UI.buildSettingsPanel(options),
+});
+function rerenderApp() {
+	const root = document.getElementById("app-mount");
+	const containerKey = Object.keys(root).find((k) =>
+		k.startsWith("__reactContainer$"),
+	);
+	const target = BdApi.Utils.findInTree(
+		root[containerKey],
+		(node) => node.stateNode?.isReactComponent,
+		{ walkable: ["child"] },
+	);
+	if (!target) return;
+	const { render } = target.stateNode;
+	if (render.toString().includes("null")) return;
+	target.stateNode.render = () => null;
+	target.stateNode.forceUpdate(() => {
+		target.stateNode.render = render;
+		target.stateNode.forceUpdate();
+	});
+}
+module.exports = class ChungusServers {
+	constructor(meta) {
+		this.meta = meta;
+	}
+	start() {
+		loadSettings();
+		if (!GuildsBarModule || !isSupported()) {
+			UI.showToast("ChungusServers couldn't find Discord's server list", {
+				type: "error",
+			});
+			return;
+		}
+		DOM.addStyle(getCss());
+		this.unpatchMenu = ContextMenu.patch("guild-context", (menu, props) => {
+			if (!Array.isArray(menu?.props?.children)) return;
+			const groups = guildMenuGroups(props);
+			if (groups.length)
+				menu.props.children.push(ContextMenu.buildMenuChildren(groups));
+		});
+		Patcher.after(GuildsBarModule[GuildsBarKey], "type", (_, [props], native) =>
+			renderServerBar(props, native),
+		);
+		rerenderApp();
+		document.addEventListener("keydown", onKeyDown, true);
+	}
+	stop() {
+		document.removeEventListener("keydown", onKeyDown, true);
+		Patcher.unpatchAll();
+		this.unpatchMenu?.();
+		DOM.removeStyle();
+		document.body.classList.remove("chungusServers-resizing");
+		rerenderApp();
+	}
+	getSettingsPanel() {
+		return /* @__PURE__ */ React2.createElement(SettingsPanel, null);
+	}
+};
 /*@end@*/
