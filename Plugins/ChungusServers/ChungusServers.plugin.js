@@ -2,7 +2,7 @@
  * @name ChungusServers
  * @author echo4eva
  * @description A wider, resizable server list with named folders you can drag around.
- * @version 1.3.0
+ * @version 1.4.0
  * @source https://github.com/echo4eva/discord-plugins/blob/master/src/ChungusServers/index.jsx
  */
 /*@cc_on
@@ -28,7 +28,16 @@
 	WScript.Quit();
 
 @else@*/
-const CHANGES = {};
+const CHANGES = {
+	"1.4.0": {
+		added: [
+			"Folder pictures, hidden icons, and mute and notification settings for whole folders",
+		],
+	},
+	"1.3.0": {
+		added: ["ChungusServers, a wide server list with named folders"],
+	},
+};
 // src/ChungusServers/index.jsx
 var api = new BdApi("ChungusServers");
 var { Webpack, Patcher, ContextMenu, Data, DOM, UI, React, Hooks } = api;
@@ -65,6 +74,15 @@ var transitionTo = Webpack.getByStrings("transitionTo - Transitioning to ", {
 });
 var GuildCreation = Webpack.getByKeys("openCreateGuildModal");
 var GlobalDiscovery = Webpack.getByKeys("transitionToGlobalDiscovery");
+var NotificationActions = Webpack.getByKeys("updateGuildNotificationSettings");
+var getMuteOptions = Webpack.getByStrings(
+	".MINUTES_15",
+	".HOURS_24",
+	".ALWAYS",
+	{
+		searchExports: true,
+	},
+);
 var saveGuildFolders = Webpack.getModule(
 	(m) =>
 		typeof m === "function" && String(m).includes('updateAsync("guildFolders"'),
@@ -94,12 +112,18 @@ var defaults = {
 	// ("f:<folderId>" or "g:<guildId>") of the folders and loose servers inside.
 	// Discord's folders can't nest, so these are local too.
 	parents: {},
+	// Icon choices by key ("g:<guildId>", "f:<folderId>" or "parent:<id>"):
+	// { hidden, image, hideServers }. `image` is a small data URL for a folder's
+	// own picture, and `hideServers` hides the icons of a folder's servers.
+	// Local, like the parent folders.
+	icons: {},
 	showUnreadDMs: true,
 	showDiscover: true,
 };
 var settings = { ...defaults };
 var settingsListeners = /* @__PURE__ */ new Set();
 function setSettings(patch, persist = true) {
+	if (patch.parents) patch = { ...patch, icons: pruneParentIcons(patch) };
 	settings = { ...settings, ...patch };
 	if (persist) Data.save("settings", settings);
 	for (const listener of settingsListeners) listener();
@@ -155,6 +179,204 @@ function movePin(pinned, guildId, ref, after) {
 	if (index < 0) next.push(guildId);
 	else next.splice(index + (after ? 1 : 0), 0, guildId);
 	return next.join() === pinned.join() ? null : next;
+}
+function pruneParentIcons(patch) {
+	const icons = patch.icons ?? settings.icons;
+	const gone = Object.keys(icons).filter(
+		(key) => key.startsWith("parent:") && !(key.slice(7) in patch.parents),
+	);
+	if (!gone.length) return icons;
+	const next = { ...icons };
+	for (const key of gone) delete next[key];
+	return next;
+}
+function setIcon(key, patch) {
+	const next = { ...settings.icons[key], ...patch };
+	for (const name of Object.keys(next)) if (!next[name]) delete next[name];
+	const icons = { ...settings.icons };
+	if (Object.keys(next).length) icons[key] = next;
+	else delete icons[key];
+	setSettings({ icons });
+}
+function useIcon(key) {
+	const [, rerender] = useReducer((n) => n + 1, 0);
+	const current = settings.icons[key];
+	const seen = useRef(current);
+	seen.current = current;
+	useEffect(() => {
+		const listener = () => {
+			if (settings.icons[key] !== seen.current) rerender();
+		};
+		settingsListeners.add(listener);
+		return () => settingsListeners.delete(listener);
+	}, [key]);
+	return current;
+}
+var ICON_IMAGE_SIZE = 64;
+async function shrinkImage(file) {
+	const bitmap = await createImageBitmap(file);
+	const side = Math.min(bitmap.width, bitmap.height);
+	const canvas = document.createElement("canvas");
+	canvas.width = canvas.height = ICON_IMAGE_SIZE;
+	const context = canvas.getContext("2d");
+	context.imageSmoothingQuality = "high";
+	context.drawImage(
+		bitmap,
+		(bitmap.width - side) / 2,
+		(bitmap.height - side) / 2,
+		side,
+		side,
+		0,
+		0,
+		ICON_IMAGE_SIZE,
+		ICON_IMAGE_SIZE,
+	);
+	bitmap.close();
+	return canvas.toDataURL("image/png");
+}
+function chooseIconImage(key) {
+	const input = document.createElement("input");
+	input.type = "file";
+	input.accept = "image/png,image/jpeg,image/gif,image/webp";
+	input.onchange = async () => {
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			setIcon(key, { image: await shrinkImage(file), hidden: false });
+		} catch {
+			UI.showToast("ChungusServers couldn't read that image", {
+				type: "error",
+			});
+		}
+	};
+	input.click();
+}
+function folderIconMenu(key) {
+	const icon = settings.icons[key];
+	return {
+		type: "submenu",
+		id: "chungus-servers-folder-icon",
+		label: "Folder Icon",
+		items: [
+			{
+				id: "chungus-servers-icon-image",
+				label: "Choose Image\u2026",
+				action: () => chooseIconImage(key),
+			},
+			icon?.image && {
+				id: "chungus-servers-icon-default",
+				label: "Use Default Icon",
+				action: () => setIcon(key, { image: null }),
+			},
+			{
+				id: "chungus-servers-icon-hide",
+				label: icon?.hidden ? "Show Icon" : "Hide Icon",
+				action: () => setIcon(key, { hidden: !icon?.hidden }),
+			},
+		].filter(Boolean),
+	};
+}
+var MUTE_OPTIONS = [
+	{ value: 900, label: "For 15 Minutes" },
+	{ value: 3600, label: "For 1 Hour" },
+	{ value: 10800, label: "For 3 Hours" },
+	{ value: 28800, label: "For 8 Hours" },
+	{ value: 86400, label: "For 24 Hours" },
+	{ value: -1, label: "Until I turn it back on" },
+];
+var ALL_MESSAGES = 0;
+var ONLY_MENTIONS = 1;
+var NO_MESSAGES = 2;
+function folderNotificationItems(folderId) {
+	const ids =
+		SortedGuildStore.getGuildFolders()
+			.find((folder) => folder.folderId === folderId)
+			?.guildIds.filter((id) => GuildStore.getGuild(id)) ?? [];
+	if (!ids.length || !NotificationActions || !UserGuildSettingsStore) return [];
+	const store = UserGuildSettingsStore;
+	const update = (patch) => {
+		for (const id of ids)
+			NotificationActions.updateGuildNotificationSettings(id, patch);
+	};
+	const mute = (seconds) =>
+		update({
+			muted: true,
+			mute_config: {
+				selected_time_window: seconds,
+				end_time:
+					seconds > 0
+						? new Date(Date.now() + seconds * 1e3).toISOString()
+						: null,
+			},
+		});
+	const muted = ids.filter((id) => store.isMuted(id)).length;
+	let options = MUTE_OPTIONS;
+	try {
+		options = getMuteOptions?.() ?? MUTE_OPTIONS;
+	} catch {}
+	const level = (value) => ({
+		type: "radio",
+		id: `chungus-servers-level-${value}`,
+		checked: ids.every((id) => store.getMessageNotifications(id) === value),
+		action: () => update({ message_notifications: value }),
+	});
+	const toggle = (id, label, isOn, setting) => {
+		const on = ids.every((guildId) => isOn(guildId));
+		return {
+			type: "toggle",
+			id: `chungus-servers-${id}`,
+			label,
+			checked: on,
+			action: () => update({ [setting]: !on }),
+		};
+	};
+	return [
+		muted < ids.length && {
+			type: "submenu",
+			id: "chungus-servers-mute-folder",
+			label: "Mute Folder",
+			action: () => mute(-1),
+			items: options.map((option) => ({
+				id: `chungus-servers-mute-${option.value}`,
+				label: option.label,
+				action: () => mute(option.value),
+			})),
+		},
+		muted > 0 && {
+			id: "chungus-servers-unmute-folder",
+			label: "Unmute Folder",
+			action: () => update({ muted: false }),
+		},
+		{
+			type: "submenu",
+			id: "chungus-servers-folder-notifications",
+			label: "Notification Settings",
+			items: [
+				{ ...level(ALL_MESSAGES), label: "All Messages" },
+				{ ...level(ONLY_MENTIONS), label: "Only @mentions" },
+				{ ...level(NO_MESSAGES), label: "Nothing" },
+				{ type: "separator" },
+				toggle(
+					"suppress-everyone",
+					"Suppress @everyone and @here",
+					(id) => store.isSuppressEveryoneEnabled(id),
+					"suppress_everyone",
+				),
+				toggle(
+					"suppress-roles",
+					"Suppress All Role @mentions",
+					(id) => store.isSuppressRolesEnabled(id),
+					"suppress_roles",
+				),
+				toggle(
+					"mobile-push",
+					"Mobile Push Notifications",
+					(id) => store.isMobilePushEnabled(id),
+					"mobile_push",
+				),
+			],
+		},
+	].filter(Boolean);
 }
 function cloneFolders(folders) {
 	const items = [];
@@ -413,8 +635,13 @@ function commitMove(drag, move) {
 	if (result.created != null) expanded[result.created] = true;
 	if (result.createdParent != null)
 		expanded[`parent:${result.createdParent}`] = true;
+	const icons = { ...settings.icons };
+	const icon = icons[`parent:${move.parentId}`];
+	if (move.type === "intoParent" && result.created != null && icon)
+		icons[`f:${result.created}`] = icon;
 	setSettings({
 		expanded,
+		icons,
 		...(result.parentsChanged && { parents: result.parents }),
 	});
 	if (result.itemsChanged) saveServerList(result.items);
@@ -733,6 +960,13 @@ var ParentFolderIcon = () =>
 			}),
 		),
 	);
+var CustomIcon = ({ src }) =>
+	/* @__PURE__ */ React.createElement("img", {
+		className: "chungusServers-icon",
+		src,
+		alt: "",
+		draggable: false,
+	});
 function MentionBadge({ count }) {
 	if (!count) return null;
 	return /* @__PURE__ */ React.createElement(
@@ -778,6 +1012,8 @@ function ServerRow({ guildId, parentId, pinned = false }) {
 		[RTCConnectionStore],
 		() => RTCConnectionStore?.getGuildId?.() === guildId,
 	);
+	const icon = useIcon(`g:${guildId}`);
+	const folderIcon = useIcon(parentId != null ? `f:${parentId}` : "");
 	if (!guild) return null;
 	const key = `${pinned ? "p" : "g"}:${guildId}`;
 	return /* @__PURE__ */ React.createElement(
@@ -810,7 +1046,9 @@ function ServerRow({ guildId, parentId, pinned = false }) {
 		/* @__PURE__ */ React.createElement("span", {
 			className: "chungusServers-pill",
 		}),
-		/* @__PURE__ */ React.createElement(GuildIcon, { guild }),
+		!icon?.hidden &&
+			!folderIcon?.hideServers &&
+			/* @__PURE__ */ React.createElement(GuildIcon, { guild }),
 		/* @__PURE__ */ React.createElement(
 			"span",
 			{ className: "chungusServers-name" },
@@ -858,6 +1096,7 @@ function FolderGroup({ folder, inParent }) {
 		[folder],
 	);
 	const key = `f:${folder.folderId}`;
+	const icon = useIcon(key);
 	const color = folderColorCss(folder.folderColor);
 	const name =
 		folder.folderName || guilds.map((guild) => guild.name).join(", ");
@@ -903,7 +1142,11 @@ function FolderGroup({ folder, inParent }) {
 			/* @__PURE__ */ React.createElement("span", {
 				className: "chungusServers-pill",
 			}),
-			/* @__PURE__ */ React.createElement(FolderIcon, { guilds, color }),
+			icon?.hidden
+				? null
+				: icon?.image
+					? /* @__PURE__ */ React.createElement(CustomIcon, { src: icon.image })
+					: /* @__PURE__ */ React.createElement(FolderIcon, { guilds, color }),
 			/* @__PURE__ */ React.createElement(
 				"span",
 				{ className: "chungusServers-name" },
@@ -996,6 +1239,7 @@ function openParentMenu(event, id, empty) {
 			label: "Rename Folder",
 			action: () => setRenamingParent(id),
 		},
+		folderIconMenu(`parent:${id}`),
 		{ type: "separator" },
 		{
 			id: "ungroup",
@@ -1016,6 +1260,7 @@ function ParentGroup({ id, parent, items }) {
 	const dnd = useContext(DragContext);
 	const { expanded } = useSettings();
 	const key = `parent:${id}`;
+	const icon = useIcon(key);
 	const open = Boolean(expanded[key]);
 	const renaming = renamingParent === id;
 	const guildIds = items.flatMap((item) => item.guildIds);
@@ -1087,7 +1332,11 @@ function ParentGroup({ id, parent, items }) {
 			/* @__PURE__ */ React.createElement("span", {
 				className: "chungusServers-pill",
 			}),
-			/* @__PURE__ */ React.createElement(ParentFolderIcon, null),
+			icon?.hidden
+				? null
+				: icon?.image
+					? /* @__PURE__ */ React.createElement(CustomIcon, { src: icon.image })
+					: /* @__PURE__ */ React.createElement(ParentFolderIcon, null),
 			renaming
 				? /* @__PURE__ */ React.createElement(NameInput, {
 						initial: parent?.name ?? "",
@@ -2268,12 +2517,41 @@ module.exports = class ChungusServers {
 					action: () => togglePin(guild.id),
 				});
 				items.push(...parentMenuItems(`g:${guild.id}`));
-			} else if (props?.folderId != null)
-				items.push(...parentMenuItems(`f:${props.folderId}`));
-			if (items.length)
-				menu.props.children.push(
-					ContextMenu.buildMenuChildren([{ type: "group", items }]),
+				const hidden = settings.icons[`g:${guild.id}`]?.hidden;
+				const folder = SortedGuildStore.getGuildFolders().find(
+					(folder2) =>
+						folder2.folderId != null && folder2.guildIds.includes(guild.id),
 				);
+				if (
+					!settings.iconMode &&
+					!settings.icons[`f:${folder?.folderId}`]?.hideServers
+				)
+					items.push({
+						id: "chungus-servers-hide-icon",
+						label: hidden ? "Show Server Icon" : "Hide Server Icon",
+						action: () => setIcon(`g:${guild.id}`, { hidden: !hidden }),
+					});
+			} else if (props?.folderId != null) {
+				items.push(...parentMenuItems(`f:${props.folderId}`));
+				if (!settings.iconMode) {
+					const key = `f:${props.folderId}`;
+					const hideServers = settings.icons[key]?.hideServers;
+					items.push(folderIconMenu(key), {
+						id: "chungus-servers-hide-server-icons",
+						label: hideServers ? "Show Server Icons" : "Hide Server Icons",
+						action: () => setIcon(key, { hideServers: !hideServers }),
+					});
+				}
+			}
+			const groups = [];
+			if (props?.folderId != null && !guild)
+				groups.push({
+					type: "group",
+					items: folderNotificationItems(props.folderId),
+				});
+			if (items.length) groups.push({ type: "group", items });
+			if (groups.length)
+				menu.props.children.push(ContextMenu.buildMenuChildren(groups));
 		});
 		Patcher.after(GuildsBarModule[GuildsBarKey], "type", (_, [props], native) =>
 			/* @__PURE__ */ React.createElement(

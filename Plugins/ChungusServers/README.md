@@ -22,9 +22,17 @@ A wider server list for Discord. Folders show their names instead of a bubble of
 - **New folder button**: click the folder button next to **Add a Server** and type a name.
 - **Folders in folders**: drop a folder on another folder to group them in a parent folder, or right-click and choose **Move to Parent Folder**.
 
+## Icons and notifications
+
+![A folder's Folder Icon menu with Choose Image, and a folder's Notification Settings menu that changes all its servers](../../docs/images/chungusservers-menus.png)
+
+- **Folder pictures**: right-click a folder and choose **Folder Icon** to use your own image, or to hide the icon.
+- **Hide icons**: right-click a server and choose **Hide Server Icon** to show just its name. Right-click a folder and choose **Hide Server Icons** to do it for every server inside.
+- **Mute a whole folder**: right-click a folder for **Mute Folder** and **Notification Settings**, which change every server inside at once.
+
 ## Good to know
 
-- Pins and parent folders are only on this computer. Discord can't sync them.
+- Pins, parent folders, and icon choices are only on this computer. Discord can't sync them.
 - Parent folders go one level deep.
 - To undo your changes, use **Restore original server order** in the plugin's settings.
 

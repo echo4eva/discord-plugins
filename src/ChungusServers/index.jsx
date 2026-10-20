@@ -35,6 +35,18 @@ const transitionTo = Webpack.getByStrings("transitionTo - Transitioning to ", {
 });
 const GuildCreation = Webpack.getByKeys("openCreateGuildModal");
 const GlobalDiscovery = Webpack.getByKeys("transitionToGlobalDiscovery");
+const NotificationActions = Webpack.getByKeys(
+	"updateGuildNotificationSettings",
+);
+// Discord's mute lengths, with labels in the user's language.
+const getMuteOptions = Webpack.getByStrings(
+	".MINUTES_15",
+	".HOURS_24",
+	".ALWAYS",
+	{
+		searchExports: true,
+	},
+);
 // Discord's own save for the server list. It takes folders in
 // SortedGuildStore.getGuildFolders() form and syncs them to every device.
 const saveGuildFolders = Webpack.getModule(
@@ -71,6 +83,11 @@ const defaults = {
 	// ("f:<folderId>" or "g:<guildId>") of the folders and loose servers inside.
 	// Discord's folders can't nest, so these are local too.
 	parents: {},
+	// Icon choices by key ("g:<guildId>", "f:<folderId>" or "parent:<id>"):
+	// { hidden, image, hideServers }. `image` is a small data URL for a folder's
+	// own picture, and `hideServers` hides the icons of a folder's servers.
+	// Local, like the parent folders.
+	icons: {},
 	showUnreadDMs: true,
 	showDiscover: true,
 };
@@ -81,6 +98,7 @@ let settings = { ...defaults };
 const settingsListeners = new Set();
 
 function setSettings(patch, persist = true) {
+	if (patch.parents) patch = { ...patch, icons: pruneParentIcons(patch) };
 	settings = { ...settings, ...patch };
 	if (persist) Data.save("settings", settings);
 	for (const listener of settingsListeners) listener();
@@ -151,6 +169,229 @@ function movePin(pinned, guildId, ref, after) {
 	if (index < 0) next.push(guildId);
 	else next.splice(index + (after ? 1 : 0), 0, guildId);
 	return next.join() === pinned.join() ? null : next;
+}
+
+// Drops the icons of parent folders that no longer exist.
+function pruneParentIcons(patch) {
+	const icons = patch.icons ?? settings.icons;
+	const gone = Object.keys(icons).filter(
+		(key) => key.startsWith("parent:") && !(key.slice(7) in patch.parents),
+	);
+	if (!gone.length) return icons;
+	const next = { ...icons };
+	for (const key of gone) delete next[key];
+	return next;
+}
+
+// Changes the icon choices for `key`, dropping any that are back to normal.
+function setIcon(key, patch) {
+	const next = { ...settings.icons[key], ...patch };
+	for (const name of Object.keys(next)) if (!next[name]) delete next[name];
+	const icons = { ...settings.icons };
+	if (Object.keys(next).length) icons[key] = next;
+	else delete icons[key];
+	setSettings({ icons });
+}
+
+// The icon choices for `key`. Unlike useSettings, it only rerenders when they
+// change, so every row doesn't rerender while the list is resized.
+function useIcon(key) {
+	const [, rerender] = useReducer((n) => n + 1, 0);
+	const current = settings.icons[key];
+	const seen = useRef(current);
+	seen.current = current;
+	useEffect(() => {
+		const listener = () => {
+			if (settings.icons[key] !== seen.current) rerender();
+		};
+		settingsListeners.add(listener);
+		return () => settingsListeners.delete(listener);
+	}, [key]);
+	return current;
+}
+
+const ICON_IMAGE_SIZE = 64;
+
+// Crops a picture to a square from its middle and scales it down, so a large
+// one doesn't bloat the saved settings.
+async function shrinkImage(file) {
+	const bitmap = await createImageBitmap(file);
+	const side = Math.min(bitmap.width, bitmap.height);
+	const canvas = document.createElement("canvas");
+	canvas.width = canvas.height = ICON_IMAGE_SIZE;
+	const context = canvas.getContext("2d");
+	context.imageSmoothingQuality = "high";
+	context.drawImage(
+		bitmap,
+		(bitmap.width - side) / 2,
+		(bitmap.height - side) / 2,
+		side,
+		side,
+		0,
+		0,
+		ICON_IMAGE_SIZE,
+		ICON_IMAGE_SIZE,
+	);
+	bitmap.close();
+	return canvas.toDataURL("image/png");
+}
+
+function chooseIconImage(key) {
+	const input = document.createElement("input");
+	input.type = "file";
+	input.accept = "image/png,image/jpeg,image/gif,image/webp";
+	input.onchange = async () => {
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			setIcon(key, { image: await shrinkImage(file), hidden: false });
+		} catch {
+			UI.showToast("ChungusServers couldn't read that image", {
+				type: "error",
+			});
+		}
+	};
+	input.click();
+}
+
+// The Folder Icon submenu for a folder or parent folder.
+function folderIconMenu(key) {
+	const icon = settings.icons[key];
+	return {
+		type: "submenu",
+		id: "chungus-servers-folder-icon",
+		label: "Folder Icon",
+		items: [
+			{
+				id: "chungus-servers-icon-image",
+				label: "Choose Image…",
+				action: () => chooseIconImage(key),
+			},
+			icon?.image && {
+				id: "chungus-servers-icon-default",
+				label: "Use Default Icon",
+				action: () => setIcon(key, { image: null }),
+			},
+			{
+				id: "chungus-servers-icon-hide",
+				label: icon?.hidden ? "Show Icon" : "Hide Icon",
+				action: () => setIcon(key, { hidden: !icon?.hidden }),
+			},
+		].filter(Boolean),
+	};
+}
+
+//#endregion
+
+//#region Folder notifications
+
+const MUTE_OPTIONS = [
+	{ value: 900, label: "For 15 Minutes" },
+	{ value: 3600, label: "For 1 Hour" },
+	{ value: 10800, label: "For 3 Hours" },
+	{ value: 28800, label: "For 8 Hours" },
+	{ value: 86400, label: "For 24 Hours" },
+	{ value: -1, label: "Until I turn it back on" },
+];
+
+// Discord's message notification levels.
+const ALL_MESSAGES = 0;
+const ONLY_MENTIONS = 1;
+const NO_MESSAGES = 2;
+
+// Mute and notification items for a Discord folder, which change every server
+// in it at once. Discord's folder menu has neither. A choice shows as checked
+// only when all the servers have it.
+function folderNotificationItems(folderId) {
+	const ids =
+		SortedGuildStore.getGuildFolders()
+			.find((folder) => folder.folderId === folderId)
+			?.guildIds.filter((id) => GuildStore.getGuild(id)) ?? [];
+	if (!ids.length || !NotificationActions || !UserGuildSettingsStore) return [];
+	const store = UserGuildSettingsStore;
+	const update = (patch) => {
+		for (const id of ids)
+			NotificationActions.updateGuildNotificationSettings(id, patch);
+	};
+	const mute = (seconds) =>
+		update({
+			muted: true,
+			mute_config: {
+				selected_time_window: seconds,
+				end_time:
+					seconds > 0
+						? new Date(Date.now() + seconds * 1000).toISOString()
+						: null,
+			},
+		});
+	const muted = ids.filter((id) => store.isMuted(id)).length;
+	let options = MUTE_OPTIONS;
+	try {
+		options = getMuteOptions?.() ?? MUTE_OPTIONS;
+	} catch {}
+	const level = (value) => ({
+		type: "radio",
+		id: `chungus-servers-level-${value}`,
+		checked: ids.every((id) => store.getMessageNotifications(id) === value),
+		action: () => update({ message_notifications: value }),
+	});
+	const toggle = (id, label, isOn, setting) => {
+		const on = ids.every((guildId) => isOn(guildId));
+		return {
+			type: "toggle",
+			id: `chungus-servers-${id}`,
+			label,
+			checked: on,
+			action: () => update({ [setting]: !on }),
+		};
+	};
+	return [
+		muted < ids.length && {
+			type: "submenu",
+			id: "chungus-servers-mute-folder",
+			label: "Mute Folder",
+			action: () => mute(-1),
+			items: options.map((option) => ({
+				id: `chungus-servers-mute-${option.value}`,
+				label: option.label,
+				action: () => mute(option.value),
+			})),
+		},
+		muted > 0 && {
+			id: "chungus-servers-unmute-folder",
+			label: "Unmute Folder",
+			action: () => update({ muted: false }),
+		},
+		{
+			type: "submenu",
+			id: "chungus-servers-folder-notifications",
+			label: "Notification Settings",
+			items: [
+				{ ...level(ALL_MESSAGES), label: "All Messages" },
+				{ ...level(ONLY_MENTIONS), label: "Only @mentions" },
+				{ ...level(NO_MESSAGES), label: "Nothing" },
+				{ type: "separator" },
+				toggle(
+					"suppress-everyone",
+					"Suppress @everyone and @here",
+					(id) => store.isSuppressEveryoneEnabled(id),
+					"suppress_everyone",
+				),
+				toggle(
+					"suppress-roles",
+					"Suppress All Role @mentions",
+					(id) => store.isSuppressRolesEnabled(id),
+					"suppress_roles",
+				),
+				toggle(
+					"mobile-push",
+					"Mobile Push Notifications",
+					(id) => store.isMobilePushEnabled(id),
+					"mobile_push",
+				),
+			],
+		},
+	].filter(Boolean);
 }
 
 //#endregion
@@ -473,8 +714,14 @@ function commitMove(drag, move) {
 	if (result.created != null) expanded[result.created] = true;
 	if (result.createdParent != null)
 		expanded[`parent:${result.createdParent}`] = true;
+	// A new folder that became a normal one by taking a server keeps its icon.
+	const icons = { ...settings.icons };
+	const icon = icons[`parent:${move.parentId}`];
+	if (move.type === "intoParent" && result.created != null && icon)
+		icons[`f:${result.created}`] = icon;
 	setSettings({
 		expanded,
+		icons,
 		...(result.parentsChanged && { parents: result.parents }),
 	});
 	if (result.itemsChanged) saveServerList(result.items);
@@ -811,6 +1058,11 @@ const ParentFolderIcon = () => (
 	</span>
 );
 
+// A folder's own picture, chosen from the folder's menu.
+const CustomIcon = ({ src }) => (
+	<img className="chungusServers-icon" src={src} alt="" draggable={false} />
+);
+
 function MentionBadge({ count }) {
 	if (!count) return null;
 	return (
@@ -868,6 +1120,8 @@ function ServerRow({ guildId, parentId, pinned = false }) {
 		[RTCConnectionStore],
 		() => RTCConnectionStore?.getGuildId?.() === guildId,
 	);
+	const icon = useIcon(`g:${guildId}`);
+	const folderIcon = useIcon(parentId != null ? `f:${parentId}` : "");
 	if (!guild) return null;
 	const key = `${pinned ? "p" : "g"}:${guildId}`;
 	return (
@@ -899,7 +1153,7 @@ function ServerRow({ guildId, parentId, pinned = false }) {
 			onContextMenu={(e) => openNativeMenu(e, "guild", { guild })}
 		>
 			<span className="chungusServers-pill" />
-			<GuildIcon guild={guild} />
+			{!icon?.hidden && !folderIcon?.hideServers && <GuildIcon guild={guild} />}
 			<span className="chungusServers-name">{guild.name}</span>
 			{inVoice && <SpeakerIcon />}
 			<MentionBadge count={mentions} />
@@ -947,6 +1201,7 @@ function FolderGroup({ folder, inParent }) {
 		[folder],
 	);
 	const key = `f:${folder.folderId}`;
+	const icon = useIcon(key);
 	const color = folderColorCss(folder.folderColor);
 	// An unnamed folder goes by its servers' names.
 	const name =
@@ -990,7 +1245,11 @@ function FolderGroup({ folder, inParent }) {
 				}
 			>
 				<span className="chungusServers-pill" />
-				<FolderIcon guilds={guilds} color={color} />
+				{icon?.hidden ? null : icon?.image ? (
+					<CustomIcon src={icon.image} />
+				) : (
+					<FolderIcon guilds={guilds} color={color} />
+				)}
 				<span className="chungusServers-name">{name}</span>
 				{!open && inVoice && <SpeakerIcon />}
 				{!open && <MentionBadge count={mentions} />}
@@ -1078,6 +1337,7 @@ function openParentMenu(event, id, empty) {
 			label: "Rename Folder",
 			action: () => setRenamingParent(id),
 		},
+		folderIconMenu(`parent:${id}`),
 		{ type: "separator" },
 		{
 			id: "ungroup",
@@ -1098,6 +1358,7 @@ function ParentGroup({ id, parent, items }) {
 	const dnd = useContext(DragContext);
 	const { expanded } = useSettings();
 	const key = `parent:${id}`;
+	const icon = useIcon(key);
 	const open = Boolean(expanded[key]);
 	const renaming = renamingParent === id;
 	const guildIds = items.flatMap((item) => item.guildIds);
@@ -1164,7 +1425,11 @@ function ParentGroup({ id, parent, items }) {
 				onContextMenu={(e) => openParentMenu(e, id, !items.length)}
 			>
 				<span className="chungusServers-pill" />
-				<ParentFolderIcon />
+				{icon?.hidden ? null : icon?.image ? (
+					<CustomIcon src={icon.image} />
+				) : (
+					<ParentFolderIcon />
+				)}
 				{renaming ? (
 					<NameInput
 						initial={parent?.name ?? ""}
@@ -2351,8 +2616,9 @@ module.exports = class ChungusServers {
 		}
 		DOM.addStyle(css + layoutCss);
 		// Discord's server and folder menus (also used by its icon bar) get a pin
-		// item for servers, and parent folder items for top-level folders and
-		// loose servers.
+		// item for servers, parent folder items for top-level folders and loose
+		// servers, and icon items for both. Folders also get mute and
+		// notification items for all their servers.
 		this.unpatchMenu = ContextMenu.patch("guild-context", (menu, props) => {
 			if (!Array.isArray(menu?.props?.children)) return;
 			const guild = props?.guild;
@@ -2366,12 +2632,43 @@ module.exports = class ChungusServers {
 					action: () => togglePin(guild.id),
 				});
 				items.push(...parentMenuItems(`g:${guild.id}`));
-			} else if (props?.folderId != null)
-				items.push(...parentMenuItems(`f:${props.folderId}`));
-			if (items.length)
-				menu.props.children.push(
-					ContextMenu.buildMenuChildren([{ type: "group", items }]),
+				// Icon choices only show in the wide list, not Discord's icon bar.
+				// A folder hiding all its servers' icons covers this one too.
+				const hidden = settings.icons[`g:${guild.id}`]?.hidden;
+				const folder = SortedGuildStore.getGuildFolders().find(
+					(folder) =>
+						folder.folderId != null && folder.guildIds.includes(guild.id),
 				);
+				if (
+					!settings.iconMode &&
+					!settings.icons[`f:${folder?.folderId}`]?.hideServers
+				)
+					items.push({
+						id: "chungus-servers-hide-icon",
+						label: hidden ? "Show Server Icon" : "Hide Server Icon",
+						action: () => setIcon(`g:${guild.id}`, { hidden: !hidden }),
+					});
+			} else if (props?.folderId != null) {
+				items.push(...parentMenuItems(`f:${props.folderId}`));
+				if (!settings.iconMode) {
+					const key = `f:${props.folderId}`;
+					const hideServers = settings.icons[key]?.hideServers;
+					items.push(folderIconMenu(key), {
+						id: "chungus-servers-hide-server-icons",
+						label: hideServers ? "Show Server Icons" : "Hide Server Icons",
+						action: () => setIcon(key, { hideServers: !hideServers }),
+					});
+				}
+			}
+			const groups = [];
+			if (props?.folderId != null && !guild)
+				groups.push({
+					type: "group",
+					items: folderNotificationItems(props.folderId),
+				});
+			if (items.length) groups.push({ type: "group", items });
+			if (groups.length)
+				menu.props.children.push(ContextMenu.buildMenuChildren(groups));
 		});
 		Patcher.after(
 			GuildsBarModule[GuildsBarKey],

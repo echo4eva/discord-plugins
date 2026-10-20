@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<!-- Plugin styles first, so the sample colours in discord.css win. -->
+		<link rel="stylesheet" href="chungusservers.css" />
+		<link rel="stylesheet" href="discord.css" />
+		<style>
+			body {
+				width: 1354px;
+				display: flex;
+				gap: 24px;
+				--background-base-lowest: #1a1b1e;
+				--background-base-low: #2b2d31;
+				--interactive-background-active: rgba(78, 80, 88, 0.48);
+				--icon-muted: #80848e;
+				--status-positive: #23a55a;
+			}
+			.window { position: relative; width: 620px; height: 392px; display: flex; flex-shrink: 0; background: var(--background-base-lowest); }
+			.chungusServers-column { width: 250px; height: 100%; margin-bottom: 0; }
+			.chungusServers-scroller { overflow: hidden; padding-top: 12px; }
+			.chungusServers-acronym { color: #fff; font-size: 10px; }
+			.hover { background: var(--interactive-background-hover); color: var(--interactive-text-hover); }
+			.menu { width: 220px; }
+			.menu.sub { width: 200px; }
+			.menu .item svg { opacity: 0.8; }
+			.menu .item .checkbox { margin-left: 12px; }
+			.menu .item .checkbox:not(.on) { box-sizing: border-box; }
+			/* Discord's radio buttons on the right of a menu item. */
+			.radio {
+				width: 18px;
+				height: 18px;
+				border-radius: 50%;
+				border: 2px solid #80848e;
+				box-sizing: border-box;
+				flex-shrink: 0;
+				margin-left: 12px;
+			}
+			.radio.on {
+				border: 5px solid var(--brand-500);
+				background: #fff;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- 1. Icon choices: a folder with its own picture and its servers' icons
+		     hidden, a loose server with its icon hidden, and the Folder Icon menu. -->
+		<div class="window">
+			<div class="chungusServers-column">
+				<div class="chungusServers-scroller">
+					<div class="chungusServers-group" style="--chungusServers-folderColor: #ed4245">
+						<div class="chungusServers-row chungusServers-folder chungusServers-unread hover">
+							<span class="chungusServers-pill"></span>
+							<div class="chungusServers-folderIcon" style="--chungusServers-folderColor: #ed4245"><div class="chungusServers-folderIconItem chungusServers-acronym c4"></div><div class="chungusServers-folderIconItem chungusServers-acronym c3"></div><div class="chungusServers-folderIconItem chungusServers-acronym c5"></div><div class="chungusServers-folderIconItem chungusServers-acronym c2"></div></div>
+							<span class="chungusServers-name">Shooters</span>
+							<span class="chungusServers-mention">5</span>
+							<svg class="chungusServers-chevron" viewBox="0 0 24 24" width="12" height="12"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+						</div>
+					</div>
+					<div class="chungusServers-group" style="--chungusServers-folderColor: #23a55a">
+						<div class="chungusServers-row chungusServers-folder chungusServers-open chungusServers-unread">
+							<span class="chungusServers-pill"></span>
+							<img class="chungusServers-icon" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%2387d37c'/%3E%3Cstop offset='1' stop-color='%232f8f5b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' fill='url(%23g)'/%3E%3Cpath d='M16 50c0-20 14-34 34-36-2 20-16 34-34 36z' fill='%23eaf7d8'/%3E%3Cpath d='M18 48 44 22' stroke='%232f8f5b' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E" />
+							<span class="chungusServers-name">Cozy games</span>
+							<svg class="chungusServers-chevron chungusServers-chevronOpen" viewBox="0 0 24 24" width="12" height="12"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+						</div>
+						<div class="chungusServers-folderChildren">
+							<div class="chungusServers-row chungusServers-child"><span class="chungusServers-pill"></span><span class="chungusServers-name">Stardew Farmers</span></div>
+							<div class="chungusServers-row chungusServers-child chungusServers-unread"><span class="chungusServers-pill"></span><span class="chungusServers-name">Animal Crossing Club</span></div>
+							<div class="chungusServers-row chungusServers-child"><span class="chungusServers-pill"></span><span class="chungusServers-name">Cozy Corner</span></div>
+						</div>
+					</div>
+					<div class="chungusServers-group">
+						<div class="chungusServers-row"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c5">BN</div><span class="chungusServers-name">Book Nook</span></div>
+					</div>
+					<div class="chungusServers-group">
+						<div class="chungusServers-row"><span class="chungusServers-pill"></span><span class="chungusServers-name">Dashboard Devs</span></div>
+					</div>
+					<div class="chungusServers-group">
+						<div class="chungusServers-row"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c2">GG</div><span class="chungusServers-name">Garden Gang</span></div>
+					</div>
+				</div>
+			</div>
+			<div class="menu" style="left: 206px; top: 40px">
+				<div class="item">Mark Folder As Read</div>
+				<div class="item">Folder Settings</div>
+				<div class="sep"></div>
+				<div class="item">Mute Folder<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="item">Notification Settings<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="sep"></div>
+				<div class="item">Move to Parent Folder<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="item hover">Folder Icon<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="item">Hide Server Icons</div>
+			</div>
+			<div class="menu sub" style="left: 428px; top: 254px; width: 172px">
+				<div class="item hover">Choose Image…</div>
+				<div class="item">Hide Icon</div>
+			</div>
+		</div>
+
+		<!-- 2. Mute and notification settings for every server in a folder. -->
+		<div class="window" style="width: 640px">
+			<div class="chungusServers-column">
+				<div class="chungusServers-scroller">
+					<div class="chungusServers-group" style="--chungusServers-folderColor: #5865f2">
+						<div class="chungusServers-row chungusServers-folder chungusServers-unread">
+							<span class="chungusServers-pill"></span>
+							<div class="chungusServers-folderIcon"><div class="chungusServers-folderIconItem chungusServers-acronym c1"></div><div class="chungusServers-folderIconItem chungusServers-acronym c5"></div><div class="chungusServers-folderIconItem chungusServers-acronym c6"></div><div class="chungusServers-folderIconItem chungusServers-acronym c3"></div></div>
+							<span class="chungusServers-name">School</span>
+							<svg class="chungusServers-chevron" viewBox="0 0 24 24" width="12" height="12"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+						</div>
+					</div>
+					<div class="chungusServers-group" style="--chungusServers-folderColor: #f0b232">
+						<div class="chungusServers-row chungusServers-folder chungusServers-open hover">
+							<span class="chungusServers-pill"></span>
+							<div class="chungusServers-folderIcon" style="--chungusServers-folderColor: #f0b232"><div class="chungusServers-folderIconItem chungusServers-acronym c3"></div><div class="chungusServers-folderIconItem chungusServers-acronym c4"></div><div class="chungusServers-folderIconItem chungusServers-acronym c2"></div><div class="chungusServers-folderIconItem chungusServers-acronym c6"></div></div>
+							<span class="chungusServers-name">Big communities</span>
+							<svg class="chungusServers-chevron chungusServers-chevronOpen" viewBox="0 0 24 24" width="12" height="12"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+						</div>
+						<div class="chungusServers-folderChildren">
+							<div class="chungusServers-row chungusServers-child chungusServers-muted"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c3">PH</div><span class="chungusServers-name">Pixel Hangout</span></div>
+							<div class="chungusServers-row chungusServers-child chungusServers-muted"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c4">MG</div><span class="chungusServers-name">Meme Garage</span></div>
+							<div class="chungusServers-row chungusServers-child chungusServers-muted"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c2">LL</div><span class="chungusServers-name">Lofi Lounge</span></div>
+							<div class="chungusServers-row chungusServers-child chungusServers-muted"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c6">AH</div><span class="chungusServers-name">Anime Hub</span></div>
+						</div>
+					</div>
+					<div class="chungusServers-group">
+						<div class="chungusServers-row"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c5">BN</div><span class="chungusServers-name">Book Nook</span></div>
+					</div>
+					<div class="chungusServers-group">
+						<div class="chungusServers-row"><span class="chungusServers-pill"></span><div class="chungusServers-icon chungusServers-acronym c1">DD</div><span class="chungusServers-name">Dashboard Devs</span></div>
+					</div>
+				</div>
+			</div>
+			<div class="menu" style="left: 130px; top: 72px">
+				<div class="item">Mark Folder As Read</div>
+				<div class="item">Folder Settings</div>
+				<div class="sep"></div>
+				<div class="item">Unmute Folder</div>
+				<div class="item hover">Notification Settings<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="sep"></div>
+				<div class="item">Move to Parent Folder<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="item">Folder Icon<svg width="14" height="14" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/></svg></div>
+				<div class="item">Hide Server Icons</div>
+			</div>
+			<div class="menu sub" style="left: 352px; top: 150px; width: 280px">
+				<div class="item">All Messages<span class="radio"></span></div>
+				<div class="item hover">Only @mentions<span class="radio on"></span></div>
+				<div class="item">Nothing<span class="radio"></span></div>
+				<div class="sep"></div>
+				<div class="item">Suppress @everyone and @here<span class="checkbox on"><svg width="14" height="14" viewBox="0 0 16 16"><path d="m4 8 3 3 5-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+				<div class="item">Suppress All Role @mentions<span class="checkbox on"><svg width="14" height="14" viewBox="0 0 16 16"><path d="m4 8 3 3 5-6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+				<div class="item">Mobile Push Notifications<span class="checkbox"></span></div>
+			</div>
+		</div>
+	</body>
+</html>
