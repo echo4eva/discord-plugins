@@ -11,10 +11,12 @@ size() {
 		threadnavigator-browser) echo 1512,812 ;;
 		threadnavigator-bulk) echo 1112,612 ;;
 		categoryalerts) echo 1312,712 ;;
+		chungusservers-overview) echo 1512,742 ;;
+		chungusservers-folders) echo 1200,452 ;;
 	esac
 }
 names="$*"
-[ -n "$names" ] || names="channeltabs-overview channeltabs-folders threadnavigator-browser threadnavigator-bulk categoryalerts"
+[ -n "$names" ] || names="channeltabs-overview channeltabs-folders threadnavigator-browser threadnavigator-bulk categoryalerts chungusservers-overview chungusservers-folders"
 for name in $names; do
 	"$CHROME" --headless=new --disable-gpu --hide-scrollbars \
 		--force-device-scale-factor=2 --window-size="$(size "$name")" \

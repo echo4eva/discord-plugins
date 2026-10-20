@@ -1,0 +1,474 @@
+/* Copy of the CSS string in src/ChungusServers/index.jsx, so the mockups
+   look like the plugin. Recopy it when the plugin CSS changes. */
+.chungusServers-column {
+	grid-area: guildsList;
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0;
+	position: relative;
+	box-sizing: border-box;
+	min-height: 0;
+	overflow: hidden;
+	background-color: var(--background-base-lowest);
+	/* Leave room for the account panel that sits over the bottom of the sidebar. */
+	margin-bottom: calc(var(--custom-app-panels-height, 0px) + var(--space-xs, 6px) - 16px);
+	mask: linear-gradient(#000, transparent) center bottom / 100% 16px no-repeat,
+		linear-gradient(#000, #000) center top / 100% calc(100% - 15px) no-repeat;
+}
+
+.refresh-fast-follow-guild-bg .chungusServers-column {
+	background-color: var(--app-frame-background);
+}
+
+.custom-theme-background .chungusServers-column {
+	background: var(--background-gradient-app-frame, var(--background-base-lowest));
+}
+
+.chungusServers-iconMode {
+	width: auto;
+	margin-bottom: 0;
+	mask: none;
+	background: none;
+}
+
+.chungusServers-iconMode > nav {
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.chungusServers-scroller {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-x: hidden;
+	overflow-y: auto;
+	padding: var(--space-xs, 6px) 8px 24px 8px;
+	scrollbar-width: thin;
+	scrollbar-color: var(--scrollbar-thin-thumb, rgba(128, 128, 128, 0.3)) transparent;
+}
+
+.chungusServers-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	position: relative;
+	height: 32px;
+	margin: 1px 0;
+	padding: 0 8px;
+	border-radius: 6px;
+	box-sizing: border-box;
+	cursor: pointer;
+	user-select: none;
+	color: var(--interactive-text-default);
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 18px;
+}
+
+.chungusServers-row:hover {
+	background: var(--interactive-background-hover);
+	color: var(--interactive-text-hover);
+}
+
+.chungusServers-row:active {
+	background: var(--interactive-background-active);
+}
+
+.chungusServers-row.chungusServers-selected {
+	background: var(--interactive-background-selected);
+	color: var(--interactive-text-active);
+}
+
+.chungusServers-row.chungusServers-unread {
+	color: var(--interactive-text-active);
+	font-weight: 600;
+}
+
+.chungusServers-row.chungusServers-muted:not(.chungusServers-selected) {
+	opacity: 0.45;
+}
+
+.chungusServers-row.chungusServers-dragging {
+	opacity: 0.4;
+}
+
+/* The white pill Discord shows beside unread and selected servers. */
+.chungusServers-pill {
+	position: absolute;
+	left: -8px;
+	top: 50%;
+	width: 4px;
+	height: 0;
+	border-radius: 0 4px 4px 0;
+	background: var(--interactive-text-active);
+	transform: translateY(-50%);
+	transition: height 0.15s ease;
+}
+
+.chungusServers-unread > .chungusServers-pill {
+	height: 8px;
+}
+
+.chungusServers-row:hover > .chungusServers-pill {
+	height: 16px;
+}
+
+.chungusServers-selected > .chungusServers-pill {
+	height: 24px;
+}
+
+.chungusServers-icon {
+	flex: 0 0 auto;
+	width: 24px;
+	height: 24px;
+	border-radius: 8px;
+	object-fit: cover;
+	-webkit-user-drag: none;
+}
+
+.chungusServers-acronym {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	background: var(--background-base-low);
+	color: var(--interactive-text-active);
+	font-size: 9px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.chungusServers-glyph {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: var(--background-base-low);
+	color: var(--interactive-text-active);
+}
+
+.chungusServers-row:hover .chungusServers-home,
+.chungusServers-selected .chungusServers-home {
+	background: var(--brand-500);
+	color: #fff;
+}
+
+.chungusServers-avatar {
+	border-radius: 50%;
+	background: var(--background-base-low);
+}
+
+.chungusServers-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.chungusServers-mention {
+	flex: 0 0 auto;
+	min-width: 16px;
+	height: 16px;
+	padding: 0 5px;
+	border-radius: 8px;
+	box-sizing: border-box;
+	background: var(--status-danger, #f23f43);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 16px;
+	text-align: center;
+}
+
+.chungusServers-voice {
+	flex: 0 0 auto;
+	color: var(--status-positive, #23a55a);
+}
+
+.chungusServers-chevron {
+	flex: 0 0 auto;
+	color: var(--icon-muted, currentColor);
+	transition: transform 0.15s ease;
+}
+
+.chungusServers-chevronOpen {
+	transform: rotate(90deg);
+}
+
+.chungusServers-folderIcon {
+	--chungusServers-folderColor: var(--brand-500);
+	flex: 0 0 auto;
+	display: grid;
+	grid-template-columns: repeat(2, 10px);
+	grid-auto-rows: 10px;
+	gap: 2px;
+	align-content: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--chungusServers-folderColor) 40%, transparent);
+}
+
+.chungusServers-folderIconItem {
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+	object-fit: cover;
+	-webkit-user-drag: none;
+}
+
+.chungusServers-folderIconItem.chungusServers-acronym {
+	font-size: 0;
+}
+
+.chungusServers-folderChildren {
+	margin: 0 0 2px 11px;
+	padding-left: 6px;
+	border-left: 2px solid color-mix(in srgb, var(--chungusServers-folderColor, var(--brand-500)) 55%, transparent);
+}
+
+.chungusServers-child {
+	height: 30px;
+}
+
+.chungusServers-parentIcon {
+	color: var(--interactive-text-default);
+}
+
+.chungusServers-parent.chungusServers-open .chungusServers-parentIcon,
+.chungusServers-parent:hover .chungusServers-parentIcon {
+	color: var(--interactive-text-active);
+}
+
+.chungusServers-parentChildren {
+	margin: 0 0 2px 11px;
+	padding-left: 6px;
+	border-left: 2px solid var(--border-subtle, rgba(128, 128, 128, 0.3));
+}
+
+.chungusServers-parentChildren .chungusServers-row > .chungusServers-pill {
+	left: -16px;
+}
+
+.chungusServers-parentEmpty {
+	display: flex;
+	align-items: center;
+	height: 30px;
+	margin: 1px 0;
+	padding: 0 8px;
+	border: 1px dashed var(--text-muted);
+	border-radius: 6px;
+	box-sizing: border-box;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.chungusServers-isDragging .chungusServers-parentEmpty {
+	border-color: var(--brand-500, #5865f2);
+}
+
+.chungusServers-actionLine {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.chungusServers-actionLine > .chungusServers-row {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.chungusServers-newFolder {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border-radius: 6px;
+	background: none;
+	color: var(--interactive-text-default);
+	cursor: pointer;
+}
+
+.chungusServers-newFolder:hover {
+	background: var(--interactive-background-hover);
+	color: var(--status-positive, #23a55a);
+}
+
+.chungusServers-nameInput {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 22px;
+	padding: 0 6px;
+	border: none;
+	border-radius: 4px;
+	outline: 2px solid var(--brand-500, #5865f2);
+	background: var(--input-background, var(--background-base-lowest));
+	color: var(--text-default, #fff);
+	font: inherit;
+}
+
+.chungusServers-child > .chungusServers-pill {
+	left: -16px;
+}
+
+.chungusServers-sectionHeader {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	height: 24px;
+	padding: 0 4px;
+	cursor: pointer;
+	user-select: none;
+	color: var(--text-muted);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.chungusServers-sectionHeader:hover {
+	color: var(--interactive-text-hover);
+}
+
+.chungusServers-sectionHeader .chungusServers-chevron {
+	width: 10px;
+	height: 10px;
+	color: currentColor;
+}
+
+.chungusServers-pinZone {
+	position: relative;
+	border-radius: 6px;
+}
+
+.chungusServers-pinZone.chungusServers-drop-into {
+	box-shadow: inset 0 0 0 2px var(--brand-500, #5865f2);
+}
+
+.chungusServers-pinPlaceholder {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 32px;
+	margin: 2px 0;
+	border: 1px dashed var(--text-muted);
+	border-radius: 6px;
+	color: var(--text-muted);
+	font-size: 12px;
+}
+
+.chungusServers-separator {
+	height: 1px;
+	margin: 6px 8px;
+	background: var(--border-subtle);
+}
+
+.chungusServers-action .chungusServers-glyph {
+	color: var(--status-positive, #23a55a);
+}
+
+.chungusServers-action:hover .chungusServers-glyph {
+	background: var(--status-positive, #23a55a);
+	color: #fff;
+}
+
+.chungusServers-settingsRow {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.chungusServers-settingsButton {
+	padding: 6px 12px;
+	border-radius: 6px;
+	background: var(--background-mod-subtle, rgba(128, 128, 128, 0.2));
+	color: var(--text-default, #fff);
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.chungusServers-settingsButton:hover:not(:disabled) {
+	background: var(--interactive-background-hover);
+}
+
+.chungusServers-settingsButton:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.chungusServers-settingsNote {
+	margin-top: 8px;
+	color: var(--text-muted);
+	font-size: 13px;
+	line-height: 18px;
+}
+
+/* Drop markers, like ChungusTabs: a blue line where it lands, or an outline
+   when it goes into a folder. */
+.chungusServers-group {
+	position: relative;
+}
+
+.chungusServers-group.chungusServers-drop-before::before,
+.chungusServers-group.chungusServers-drop-after::after,
+.chungusServers-row.chungusServers-drop-before::before,
+.chungusServers-row.chungusServers-drop-after::after {
+	content: "";
+	position: absolute;
+	left: 4px;
+	right: 4px;
+	height: 2px;
+	border-radius: 1px;
+	background: var(--brand-500, #5865f2);
+	pointer-events: none;
+	z-index: 1;
+}
+
+.chungusServers-group.chungusServers-drop-before::before,
+.chungusServers-row.chungusServers-drop-before::before {
+	top: -2px;
+}
+
+.chungusServers-group.chungusServers-drop-after::after,
+.chungusServers-row.chungusServers-drop-after::after {
+	bottom: -2px;
+}
+
+.chungusServers-row.chungusServers-drop-into {
+	box-shadow: inset 0 0 0 2px var(--brand-500, #5865f2);
+	background: var(--interactive-background-hover);
+}
+
+.chungusServers-isDragging .chungusServers-row:not(.chungusServers-drop-into):hover {
+	background: none;
+}
+
+.chungusServers-resizeHandle {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 5px;
+	cursor: col-resize;
+	z-index: 2;
+}
+
+.chungusServers-resizeHandle:hover,
+body.chungusServers-resizing .chungusServers-resizeHandle {
+	background: color-mix(in srgb, var(--brand-500) 50%, transparent);
+}
+
+body.chungusServers-resizing {
+	cursor: col-resize;
+	user-select: none;
+}
+
+/* CollapsibleUI animates the bar's width, which makes resizing lag. */
+body.chungusServers-resizing .chungusServers-column,
+body.chungusServers-resizing .chungusServers-column > nav {
+	transition: none !important;
+}

@@ -9,7 +9,9 @@ const ctx = await context({
 			? ["src/ThreadNavigator/index.jsx"]
 			: process.argv.includes("--category-alerts")
 				? ["src/CategoryAlerts/index.jsx"]
-				: await Array.fromAsync(glob("src/**/index.*")),
+				: process.argv.includes("--servers")
+					? ["src/ChungusServers/index.jsx"]
+					: await Array.fromAsync(glob("src/**/index.*")),
 	outdir: "Plugins",
 	entryNames: "[dir]/[dir].plugin",
 	outbase: "src",

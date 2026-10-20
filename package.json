@@ -1,7 +1,7 @@
 {
 	"name": "discord-plugins",
 	"version": "1.0.0",
-	"description": "echo4eva's BetterDiscord plugins: ChungusTabs, ThreadNavigator, and CategoryAlerts",
+	"description": "echo4eva's BetterDiscord plugins: ChungusTabs, ChungusServers, ThreadNavigator, and CategoryAlerts",
 	"type": "module",
 	"scripts": {
 		"dev": "node --watch lib/dev.ts",
@@ -9,6 +9,7 @@
 		"build:tabs": "node lib/dev.ts --build --tabs",
 		"build:threads": "node lib/dev.ts --build --thread-navigator",
 		"build:alerts": "node lib/dev.ts --build --category-alerts",
+		"build:servers": "node lib/dev.ts --build --servers",
 		"format": "prettier --write ."
 	},
 	"maintainers": [
