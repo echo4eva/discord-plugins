@@ -1,6 +1,6 @@
 {
 	"description": "A wider, resizable server list with named folders you can drag around.",
-	"version": "1.4.0",
+	"version": "1.5.0",
 	"name": "chungus-servers",
 	"repository": {
 		"type": "git",
@@ -12,5 +12,8 @@
 		{
 			"name": "echo4eva"
 		}
+	],
+	"changelogPaths": [
+		"src/shared/chungusServers"
 	]
 }

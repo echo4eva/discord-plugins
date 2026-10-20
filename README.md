@@ -26,6 +26,26 @@ Get notified when something happens in a category you care about. Right-click a 
 
 ![CategoryAlerts category menu, a desktop notification, and an in-app toast](docs/images/categoryalerts.png)
 
+## Vesktop and Vencord
+
+ChungusTabs, ChungusServers, and ThreadNavigator have native Vencord versions. Each shares its React interface and behavior with the BetterDiscord version. Stock Vencord cannot load BetterDiscord `.plugin.js` files; use the native builds below for Vesktop.
+
+### Native Vencord versions
+
+The native adapters are in [`vencord/`](vencord). Custom plugins must be built into a Vencord source checkout:
+
+1. Clone [Vencord](https://github.com/Vendicated/Vencord) next to this repository (or set `VENCORD_DIR` to its path) and run `pnpm install` in it.
+2. Run `npm run vencord:build` here. It copies the adapters, shared source, and plugin manifests into Vencord's `src/userplugins` and builds Vencord. `npm run vencord` only copies.
+3. In Vesktop settings, set the Vencord location to the checkout's `dist` folder and restart. Enable **ChungusTabs**, **ChungusServers**, and **ThreadNavigator** in Vencord's plugin list, then reload when prompted.
+
+To update, pull Vencord and run `npm run vencord:build` again. A custom Vencord location requires manual Vencord updates. Reset that location in Vesktop settings to return to its bundled Vencord.
+
+Settings are stored separately in BetterDiscord and Vencord; existing tabs, bookmarks, pins, and local parent folders are not automatically transferred. See [shared implementation and validation notes](docs/shared-plugin-ui.md) for source locations, build steps, and test coverage.
+
+### BetterDiscord compatibility option
+
+The same BetterDiscord files can also run through [BetterVencord](https://github.com/Davilarek/BetterVencordPatchset), a third-party Vencord patchset with a BD Compatibility Layer. Import the `.plugin.js` files into `/BD/plugins` in its Virtual Filesystem settings and reload BD Plugins. Use either the native plugins or the compatibility versions of these plugins in that app. If compatibility-layer right-click menus are missing, its configured CORS proxy may be unavailable.
+
 ## Credits
 
 ChungusTabs is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, maintained by samfundev and contributors in [samfundev/BetterDiscordStuff](https://github.com/samfundev/BetterDiscordStuff). This repository started from that one and keeps its git history and build tooling. It was previously called ChannelTabsMac, then ChannelTabs. ChungusServers, ThreadNavigator, and CategoryAlerts are original to this repository.

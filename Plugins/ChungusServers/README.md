@@ -41,6 +41,12 @@ A wider server list for Discord. Folders show their names instead of a bubble of
 1. [Download ChungusServers.plugin.js](https://raw.githubusercontent.com/echo4eva/discord-plugins/master/Plugins/ChungusServers/ChungusServers.plugin.js).
 2. Put it in BetterDiscord's `plugins` folder and turn it on in BetterDiscord's Plugins settings.
 
+## Native Vencord / Vesktop
+
+A native version shares this plugin's React interface and behavior. Follow the [Vencord build instructions](../../README.md#native-vencord-versions). Saved settings are separate between platforms.
+
 ## Develop
 
-Edit [`src/ChungusServers/index.jsx`](../../src/ChungusServers/index.jsx), then run `npm run build:servers` from the repository root.
+Edit [`src/shared/chungusServers/core.jsx`](../../src/shared/chungusServers/core.jsx) for shared UI and behavior. The BetterDiscord adapter is [`src/ChungusServers/index.jsx`](../../src/ChungusServers/index.jsx); the native adapter is [`vencord/chungusServers/index.tsx`](../../vencord/chungusServers/index.tsx).
+
+Run `npm run build:servers` for BetterDiscord and `npm run vencord:build` for Vencord. See [shared implementation notes](../../docs/shared-plugin-ui.md).

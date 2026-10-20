@@ -1,9 +1,9 @@
 {
 	"description": "Browser-style tabs, folders, and bookmarks for Discord.",
-	"version": "3.0.0",
+	"version": "3.1.0",
 	"name": "chungus-tabs",
 	"changelogPaths": [
-		"src/ChungusTabs",
+		"src/shared/chungusTabs",
 		"src/ChannelTabs",
 		"src/ChannelTabsMac"
 	],

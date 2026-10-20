@@ -10,7 +10,9 @@
 		"build:threads": "node lib/dev.ts --build --thread-navigator",
 		"build:alerts": "node lib/dev.ts --build --category-alerts",
 		"build:servers": "node lib/dev.ts --build --servers",
-		"format": "prettier --write ."
+		"format": "prettier --write .",
+		"vencord": "node lib/vencord.ts",
+		"vencord:build": "node lib/vencord.ts --build"
 	},
 	"maintainers": [
 		{

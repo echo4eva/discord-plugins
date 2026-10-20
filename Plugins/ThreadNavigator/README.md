@@ -34,4 +34,6 @@ Closing and locking need the Manage Threads permission.
 
 ## Develop
 
-Edit [`src/ThreadNavigator/index.jsx`](../../src/ThreadNavigator/index.jsx), then run `npm run build:threads` from the repository root.
+The thread list is shared by the BetterDiscord and Vencord versions and lives in [`src/shared/threadNavigator`](../../src/shared/threadNavigator): the data and bulk actions, the React panel, which lists are open, and the styles. [`src/ThreadNavigator/index.jsx`](../../src/ThreadNavigator/index.jsx) puts it on screen in BetterDiscord, and [`vencord/threadNavigator`](../../vencord/threadNavigator) does the same in Vencord.
+
+Run `npm run build:threads` from the repository root for BetterDiscord, and `npm run vencord:build` for Vencord.

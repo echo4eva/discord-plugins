@@ -59,6 +59,8 @@ export default {
 		options.minify ??= false;
 		options.platform ??= "node";
 		options.target ??= "chrome128";
+		// Stylesheets are imported as text for BdApi.DOM.addStyle.
+		options.loader = { ".css": "text", ...options.loader };
 
 		// Required options
 		options.write = true;
@@ -149,8 +151,8 @@ export default {
 				metaComment = `/**\n${fields.map(([k, v]) => `* @${k} ${v}`).join("\n")}\n*/\n`;
 
 				// Changelog, built from the commits that touched this plugin's source.
-				// `changelogPaths` in its package.json lists folders it used to live
-				// in, newest first, so history survives a rename.
+				// `changelogPaths` lists shared source folders and previous locations,
+				// newest first, so shared fixes and renames remain in the changelog.
 				const pluginDir = dirname(output.entryPoint);
 				const packageJson = JSON.parse(
 					await readFile(join(pluginDir, "package.json"), "utf8"),

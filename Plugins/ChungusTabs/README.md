@@ -37,6 +37,12 @@ You can change every shortcut, or turn it off, in the plugin's settings.
 
 This is a fork of the original [ChannelTabs](https://github.com/samfundev/BetterDiscordStuff/tree/master/Plugins/ChannelTabs) by l0c4lh057 and CarJem Generations, previously called ChannelTabsMac and then ChannelTabs. It keeps its own settings, so tabs from the original ChannelTabs aren't copied over. Tabs saved under ChannelTabsMac carry over.
 
+## Native Vencord / Vesktop
+
+A native version shares this plugin's React interface and behavior. Follow the [Vencord build instructions](../../README.md#native-vencord-versions). Saved settings are separate between platforms.
+
 ## Develop
 
-Edit [`src/ChungusTabs/index.jsx`](../../src/ChungusTabs/index.jsx), then run `npm run build:tabs` from the repository root.
+Edit [`src/shared/chungusTabs/core.jsx`](../../src/shared/chungusTabs/core.jsx) for shared UI and behavior. The BetterDiscord adapter is [`src/ChungusTabs/index.jsx`](../../src/ChungusTabs/index.jsx); the native adapter is [`vencord/chungusTabs/index.tsx`](../../vencord/chungusTabs/index.tsx).
+
+Run `npm run build:tabs` for BetterDiscord and `npm run vencord:build` for Vencord. See [shared implementation notes](../../docs/shared-plugin-ui.md).
