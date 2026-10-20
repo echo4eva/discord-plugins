@@ -10,7 +10,8 @@ Browser-style tabs for Discord. Group tabs into folders, close a folder to save 
 - **Folders**: group tabs with the folder button, or drag a tab onto a folder. Click a folder to collapse it.
 - **Save folders for later**: right-click a folder and choose **Close folder**. Reopen it from the saved-folders button with all its tabs.
 - **Drag to reorder**: drag tabs, folders, and bookmarks. A blue line shows where they'll land.
-- **Bookmarks**: keep favorite channels in a row under your tabs, and group them into folders.
+- **Bookmarks**: keep favorite channels in a row under your tabs, and group them into folders. Drag a channel, thread, or DM from the sidebar onto the row or onto a bookmark folder to bookmark it. With [ChungusServers](../ChungusServers/README.md), you can drag a server onto it too.
+- **Bookmarks to tabs**: drag a bookmark onto the tab row to open it there, or onto a tab folder to open it inside. Drag a bookmark folder up to open all of its bookmarks, as a tab folder of the same name unless it lands in one.
 - **Scroll memory**: each tab remembers where you were in the channel list, the chat, and the member list.
 - **Copy link**: right-click a tab to copy its Discord link.
 
