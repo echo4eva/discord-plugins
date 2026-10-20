@@ -32,15 +32,27 @@ ChungusTabs, ChungusServers, and ThreadNavigator have native Vencord versions. E
 
 ### Native Vencord versions
 
-The native adapters are in [`vencord/`](vencord). Custom plugins must be built into a Vencord source checkout:
+Follow Vencord's official guides for [building and installing Vencord](https://docs.vencord.dev/installing/) and [installing custom plugins](https://docs.vencord.dev/installing/custom-plugins/).
 
-1. Clone [Vencord](https://github.com/Vendicated/Vencord) next to this repository (or set `VENCORD_DIR` to its path) and run `pnpm install` in it.
-2. Run `npm run vencord:build` here. It copies the adapters, shared source, and plugin manifests into Vencord's `src/userplugins` and builds Vencord. `npm run vencord` only copies.
-3. In Vesktop settings, set the Vencord location to the checkout's `dist` folder and restart. Enable **ChungusTabs**, **ChungusServers**, and **ThreadNavigator** in Vencord's plugin list, then reload when prompted.
+At the **Adding plugins** step, use our copy command to add **ChungusTabs**, **ChungusServers**, and **ThreadNavigator**. From the folder containing your `Vencord` source folder, run:
 
-To update, pull Vencord and run `npm run vencord:build` again. A custom Vencord location requires manual Vencord updates. Reset that location in Vesktop settings to return to its bundled Vencord.
+```sh
+git clone https://github.com/echo4eva/discord-plugins.git
+cd discord-plugins
+npm run vencord
+```
 
-Settings are stored separately in BetterDiscord and Vencord; existing tabs, bookmarks, pins, and local parent folders are not automatically transferred. See [shared implementation and validation notes](docs/shared-plugin-ui.md) for source locations, build steps, and test coverage.
+This creates the three plugin folders in your Vencord checkout and copies their required shared source files:
+
+```text
+Vencord/src/userplugins/chungusTabs/
+Vencord/src/userplugins/chungusServers/
+Vencord/src/userplugins/threadNavigator/
+```
+
+If Vencord's source folder is elsewhere, set `VENCORD_DIR` to its path. Continue the official guide's build and installation steps, restart your app, and enable the three plugins in **Vencord → Plugins**.
+
+When updating our plugins, pull this repository and rerun `npm run vencord` before rebuilding Vencord. The shortcut `npm run vencord:build` copies and builds in one command. Settings are stored separately from BetterDiscord. See [shared implementation notes](docs/shared-plugin-ui.md) for development details.
 
 ### BetterDiscord compatibility option
 

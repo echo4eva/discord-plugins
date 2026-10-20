@@ -15,6 +15,8 @@ BetterDiscord patches the title bar and server bar at runtime; Vencord patches D
 
 ## Build and reload
 
+For installation, follow the official guides linked from the [README](../README.md#native-vencord-versions). The commands below describe this repository's development workflow.
+
 Run `npm run build` for all BetterDiscord files, or `npm run build:tabs`, `npm run build:servers`, and `npm run build:threads` individually. Release builds write to `Plugins/`. `npm run dev` watches source and copies development builds into BetterDiscord's plugin folder.
 
 Run `npm run vencord:build` to copy the native adapters, shared source, and plugin manifests into a Vencord checkout and build it. The default checkout is `../Vencord`; override it with `VENCORD_DIR`. The copies in Vencord's `src/userplugins/` are build inputs, so edit this repository and copy again. Restart or reload Vesktop to load the rebuilt code. Turn on the three plugins in Vencord's plugin settings; source patches require a reload when enabled.

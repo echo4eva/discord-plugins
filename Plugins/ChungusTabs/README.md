@@ -39,7 +39,7 @@ This is a fork of the original [ChannelTabs](https://github.com/samfundev/Better
 
 ## Native Vencord / Vesktop
 
-A native version shares this plugin's React interface and behavior. Follow the [Vencord build instructions](../../README.md#native-vencord-versions). Saved settings are separate between platforms.
+A native version shares this plugin's React interface and behavior. Follow the [native installation instructions](../../README.md#native-vencord-versions). Saved settings are separate between platforms.
 
 ## Develop
 

@@ -32,6 +32,10 @@ Closing and locking need the Manage Threads permission.
 2. Put it in BetterDiscord's `plugins` folder and turn it on in BetterDiscord's Plugins settings.
 3. Optional: install this repository's [ChungusTabs](../ChungusTabs/README.md) to open threads in tabs.
 
+## Native Vencord / Vesktop
+
+A native version shares this plugin's React interface and behavior. Follow the [native installation instructions](../../README.md#native-vencord-versions). Saved settings are separate between platforms.
+
 ## Develop
 
 The thread list is shared by the BetterDiscord and Vencord versions and lives in [`src/shared/threadNavigator`](../../src/shared/threadNavigator): the data and bulk actions, the React panel, which lists are open, and the styles. [`src/ThreadNavigator/index.jsx`](../../src/ThreadNavigator/index.jsx) puts it on screen in BetterDiscord, and [`vencord/threadNavigator`](../../vencord/threadNavigator) does the same in Vencord.
