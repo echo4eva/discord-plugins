@@ -6546,9 +6546,20 @@ body.channelTabs-draggingFav {
 				return;
 
 			const guildIcon = e.target.closest('[data-list-item-id^="guildsnav___"]');
-			const iconGuildId = guildIcon
+			const iconId = guildIcon
 				?.getAttribute("data-list-item-id")
-				?.match(/^guildsnav___(\d+)$/)?.[1];
+				?.match(/^guildsnav___(\d+|home)$/)?.[1];
+			if (iconId === "home") {
+				e.preventDefault();
+				e.stopPropagation();
+				TopBarRef.current.saveChannel(
+					null,
+					null,
+					getCurrentName("/channels/@me"),
+				);
+				return;
+			}
+			const iconGuildId = iconId;
 			const guild = iconGuildId && GuildStore.getGuild(iconGuildId);
 			if (guild) {
 				e.preventDefault();

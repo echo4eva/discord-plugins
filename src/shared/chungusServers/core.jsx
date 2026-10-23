@@ -1565,6 +1565,7 @@ function HomeRow({ countDMs }) {
 				"chungusServers-row",
 				selected && "chungusServers-selected",
 			)}
+			data-list-item-id="guildsnav___home"
 			role="treeitem"
 			tabIndex={-1}
 			onClick={() => transitionTo?.("/channels/@me")}
