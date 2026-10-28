@@ -6058,6 +6058,10 @@ html:not(.platform-win) #channelTabs-settingsMenu {
 	background: var(--interactive-background-hover);
 }
 
+/* Electron's window-drag regions can swallow clicks on menus layered over
+   either row, regardless of z-index. Release both rows while a menu is open. */
+body:has([role="menu"]) .channelTabs-tabContainer,
+body:has([role="menu"]) .channelTabs-favContainer,
 /* Keep the tab row's window-drag area from swallowing the drop. */
 body.channelTabs-draggingTab .channelTabs-tabContainer,
 body.channelTabs-draggingFav .channelTabs-tabContainer {
