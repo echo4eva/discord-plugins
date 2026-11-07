@@ -146,7 +146,7 @@ export default definePlugin({
 			find: '"data-window-chrome"',
 			replacement: {
 				match:
-					/(function \i\((\i)\)\{let\{leading:.+?return\(0,\i\.jsxs\)\()"div",\{/,
+					/(function(?: \i)?\((\i)\)\{let\{leading:.+?return\(0,\i\.jsxs\)\()"div",\{/,
 				replace: "$1$self.TitleBar,{vcCtProps:$2,",
 			},
 		},
